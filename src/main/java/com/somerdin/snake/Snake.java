@@ -1,62 +1,101 @@
 package com.somerdin.snake;
 
+import com.somerdin.snake.Point.PointInt;
+
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.Iterator;
 
 public class Snake {
     // how many tiles the snake moves per second
-    public static final int MOVE_SPEED = 2;
+    public static final int FRAMES_TO_MOVE = 5;
+    public static final int BOOSTED_FRAMES_TO_MOVE = 3;
 
-    private Deque<Point> cells;
-    private Direction dir;
+    private Deque<SnakeCell> cells;
     private int length;
+    private int speed;
 
-    public Snake(Point head, int length, Direction dir) {
+    public Snake(SnakeCell head, int length) {
         if (length <= 0) {
             throw new IllegalArgumentException();
         }
 
-        this.dir = dir;
         this.length = length;
+        this.speed = FRAMES_TO_MOVE;
 
         cells = new ArrayDeque<>(length);
 
-        Point next = head;
+        SnakeCell next = head;
+        Direction makeDir = head.getDir().opposite();
         for (int i = 0; i < length; i++) {
-            cells.addFirst(next);
-            next = next.add(dir.dx, dir.dy);
+            cells.addLast(next);
+            next = new SnakeCell(head.getDir(), next.getPos().go(makeDir),
+                    false);
         }
     }
 
-    public Point head() {
+    public int speed() {
+        return speed;
+    }
+
+    public void speedUp() {
+        speed = Snake.BOOSTED_FRAMES_TO_MOVE;
+    }
+
+    public void slowDown() {
+        speed = Snake.FRAMES_TO_MOVE;
+    }
+
+    public SnakeCell getHead() {
         return cells.getFirst();
     }
 
-    public Point tail() {
+    public SnakeCell getTail() {
         return cells.getLast();
     }
 
-    public Direction getDir() {
-        return dir;
+    public int length() {
+        return length;
     }
 
-    public Iterable<Point> body() {
+    public boolean headOnBody() {
+        Iterator<SnakeCell> iter = cells.iterator();
+        iter.next();
+        while (iter.hasNext()) {
+            PointInt p= iter.next().getPos();
+            if (p.equals(getHead().getPos())) {
+                return true;
+            }
+        }
+        return false;
+     }
+
+    public boolean containsPoint(PointInt p) {
+        return cells.stream().anyMatch(sc -> sc.getPos().equals(p));
+    }
+
+    public Iterable<SnakeCell> getBody() {
         return cells;
     }
 
-    public void setDir(Direction newDir) {
-        dir = newDir;
+    public void setDirection(Direction newDir) {
+        SnakeCell head = getHead();
+        head.setDir(newDir);
+        cells.getFirst().setCorner(true);
     }
 
     public void move() {
-        cells.addFirst(head().add(dir.dx, dir.dy));
+        cells.addFirst(new SnakeCell(getHead().getDir(), getHead().getNextPos(), false));
         cells.removeLast();
-        System.out.println(head());
+        getTail().setCorner(false);
     }
 
     public void grow() {
-        Direction opposite = dir.opposite();
-        Point newTail = tail().add(opposite.dx, opposite.dy);
+        Direction tailDir = getTail().getDir();
+        SnakeCell newTail = new SnakeCell(
+                tailDir,
+                getTail().getPos().go(tailDir.opposite()),
+                false);
         cells.addLast(newTail);
         length++;
     }
