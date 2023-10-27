@@ -13,39 +13,54 @@ public class BladePath {
         }
         this.start = start;
 
-        int turnCount = 3;
-        int movesSinceLastTurn = 0;
-        Point current = start;
+        int turnsLeft = 3;
+        int movesSinceLastTurn = 5;
+        Point current = start.goFollowPath(path);
+        System.out.println("Here:" + current);
 
-        while (current.inBounds(GameState.WIDTH, GameState.HEIGHT) || path.size() < 6) {
-            System.out.println(current);
-            Direction last = path.getLast();
-            // TODO: refactor this crap
-            if (turnCount > 0
-                    && Math.random() < 0.1
-                    && movesSinceLastTurn > 4) {
+        while (current.inBounds(GameState.WIDTH, GameState.HEIGHT)) {
+            Direction lastDir = path.getLast();
+
+            Direction[] randDirs;
+            // path continues straight if there was a turn too recently,
+            // or if RNG says so
+            if (movesSinceLastTurn < 4 || turnsLeft == 0) {
+                System.out.println(movesSinceLastTurn);
+                System.out.println(turnsLeft);
+                path.addLast(lastDir);
+                movesSinceLastTurn++;
+            } else if ((randDirs = possibleRandomDirs(initialDirection,
+                    lastDir)).length == 3) {
+                System.out.println(2);
+                // probabilities: 0.9 straight, 0.05 left, 0.05 right
                 double rand = Math.random();
-                if (rand < 0.5) {
-                    if (last == initialDirection) {
-                        path.addLast(last.orthogonal()[0]);
-                        turnCount--;
-                    } else {
-                        path.addLast(initialDirection);
-                    }
+                if (rand < 0.9) {
+                    path.addLast(randDirs[0]);
+                    movesSinceLastTurn++;
+                } else if (rand < 0.95) {
+                    path.addLast(randDirs[1]);
+                    movesSinceLastTurn = 0;
+                    turnsLeft--;
                 } else {
-                    if (last == initialDirection) {
-                        path.addLast(last.orthogonal()[1]);
-                        turnCount--;
-                    } else {
-                        path.addLast(initialDirection);
-                    }
+                    path.addLast(randDirs[2]);
+                    movesSinceLastTurn = 0;
+                    turnsLeft--;
                 }
-                movesSinceLastTurn = 0;
             } else {
-                path.addLast(path.getLast());
+                System.out.println(3);
+                // probabilities: 0.9 straight, 0.1 other valid direction
+                double rand = Math.random();
+                if (rand < 0.9) {
+                    path.addLast(randDirs[0]);
+                    movesSinceLastTurn++;
+                } else {
+                    path.addLast(randDirs[1]);
+                    movesSinceLastTurn = 0;
+                    turnsLeft--;
+                }
             }
+            System.out.println(path.getLast());
             current = current.go(path.getLast());
-            movesSinceLastTurn++;
         }
         System.out.println("Created size: " + path.size());
     }
@@ -54,7 +69,30 @@ public class BladePath {
         return start;
     }
 
-    public Deque<Direction> getPath() {
+    public Iterable<Direction> getPath() {
         return path;
+    }
+
+    public Direction removeFirst() {
+        Direction first = path.removeFirst();
+        start = start.go(first);
+        return first;
+    }
+
+    public Direction getFirst() {
+        return path.getFirst();
+    }
+
+    public int size() {
+        return path.size();
+    }
+
+    private Direction[] possibleRandomDirs(Direction start, Direction current) {
+        if (start == current) {
+            Direction[] orthogonal = start.orthogonal();
+            return new Direction[] {start, orthogonal[0], orthogonal[1]};
+        } else {
+            return new Direction[] {start, current};
+        }
     }
 }

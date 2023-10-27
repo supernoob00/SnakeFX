@@ -37,8 +37,7 @@ public class GameState {
         }
         // TODO: food should be at random location
         food[5][5] = Food.RED_APPLE;
-        blades.add(new SpinBlade(new PointDouble(5, -1), Direction.DOWN,
-                SpinBlade.SLOW_BLADE_SPEED, 0.75));
+        spawnBlade();
     }
 
     public Snake getSnake() {
@@ -136,6 +135,35 @@ public class GameState {
         placeFood(random, Food.RED_APPLE);
     }
 
+    public void spawnBlade() {
+        int rand1 = (int) (Math.random() * width);
+        int rand2 = (int) (Math.random() * 4);
+        double speed = SpinBlade.SLOW_BLADE_SPEED;
+        double size = 0.75;
+
+        PointDouble start;
+        SpinBlade blade = null;
+        switch (rand2) {
+            case 0:
+                start = new PointDouble(rand1, -1);
+                blade = new SpinBlade(start, Direction.DOWN, speed, size);
+                break;
+            case 1:
+                start = new PointDouble(rand1, width + 1);
+                blade = new SpinBlade(start, Direction.UP, speed, size);
+                break;
+            case 2:
+                start = new PointDouble(-1, rand1);
+                blade = new SpinBlade(start, Direction.RIGHT, speed, size);
+                break;
+            case 3:
+                start = new PointDouble(width + 1, rand1);
+                blade = new SpinBlade(start, Direction.LEFT, speed, size);
+                break;
+        }
+        blades.add(blade);
+    }
+
     public Iterable<SpinBlade> getBlades() {
         return blades;
     }
@@ -157,8 +185,7 @@ public class GameState {
             sb.move();
             PointDouble p = sb.getPos();
             // remove from deque if spin-blade is out of bounds
-            if (p.x() < -1 || p.x() > WIDTH + 1
-                    || p.y() < -1 || p.y() > WIDTH + 1) {
+            if (sb.getBladePath().size() == 0) {
                 it.remove();
                 System.out.println("Removed!");
             }

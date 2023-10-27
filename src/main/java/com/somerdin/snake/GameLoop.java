@@ -128,7 +128,7 @@ public class GameLoop {
 
         drawFood();
 
-        drawBlades();
+        drawBladesAndPaths();
 
         // draw player snake
         Snake snake = gameState.getSnake();
@@ -155,14 +155,15 @@ public class GameLoop {
         }
     }
 
-    private void drawBlades() {
+    private void drawBladesAndPaths() {
         for (SpinBlade sb : gameState.getBlades()) {
-            double x = interpolate(sb.getPos().x() * cellLength,
-                    sb.getNextPos().x() * cellLength,
-                    frameCount % sb.speed() / (double) sb.speed());
-            double y = interpolate(sb.getPos().y() * cellLength,
-                    sb.getNextPos().y() * cellLength,
-                    frameCount % sb.speed() / (double) sb.speed());
+            Point current = sb.getBladePath().getStart();
+            for (Direction dir : sb.getBladePath().getPath()) {
+                PixelTile.BLADE_PATH.setOrientation(dir);
+                drawImage(PixelTile.BLADE_PATH, current.x() * cellLength,
+                        current.y() * cellLength);
+                current = current.go(dir);
+            }
             PixelTile.SHURIKEN.rotate(60);
             drawImage(PixelTile.SHURIKEN, sb.getPos().x() * cellLength,
                     sb.getPos().y() * cellLength);

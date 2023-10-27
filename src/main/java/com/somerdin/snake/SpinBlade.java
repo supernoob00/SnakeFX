@@ -53,12 +53,14 @@ public class SpinBlade {
     public void move() {
         double epsilon = 0.01;
         Direction next;
-        if (Math.abs(distTraveled % 1 - 1) < epsilon) {
-            next = path.getPath().removeFirst();
-            System.out.println("Size: " + path.getPath().size());
+        if (Math.abs(distTraveled - 1) < epsilon) {
+            next = path.removeFirst();
+            distTraveled = 0;
         } else {
-            next = path.getPath().getFirst();
+            next = path.getFirst();
         }
+        System.out.println("pos: " + position);
+        System.out.println(path.size());
         position = position.go(next, speed);
         distTraveled += speed;
     }
@@ -70,5 +72,9 @@ public class SpinBlade {
 
     public PointDouble getNextPos() {
         return position.go(direction, speed);
+    }
+
+    public BladePath getBladePath() {
+        return this.path;
     }
 }
