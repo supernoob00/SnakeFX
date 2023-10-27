@@ -1,12 +1,12 @@
 package com.somerdin.snake;
 
-import com.somerdin.snake.Point.PointInt;
-
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
+import java.util.List;
+import java.util.stream.Collectors;
 
-public class Snake {
+public class Snake implements Mover {
     // how many tiles the snake moves per second
     public static final int FRAMES_TO_MOVE = 5;
     public static final int BOOSTED_FRAMES_TO_MOVE = 3;
@@ -62,7 +62,7 @@ public class Snake {
         Iterator<SnakeCell> iter = cells.iterator();
         iter.next();
         while (iter.hasNext()) {
-            PointInt p= iter.next().getPos();
+            Point p= iter.next().getPos();
             if (p.equals(getHead().getPos())) {
                 return true;
             }
@@ -70,12 +70,22 @@ public class Snake {
         return false;
      }
 
-    public boolean containsPoint(PointInt p) {
+    public boolean containsPoint(Point p) {
         return cells.stream().anyMatch(sc -> sc.getPos().equals(p));
     }
 
-    public Iterable<SnakeCell> getBody() {
-        return cells;
+    public SnakeCell[] getBody() {
+        return cells.toArray(new SnakeCell[0]);
+    }
+
+    public List<Point> getPoints() {
+        return cells.stream()
+                .map(SnakeCell::getPos)
+                .collect(Collectors.toList());
+    }
+
+    public int getLength() {
+        return cells.size();
     }
 
     public void setDirection(Direction newDir) {

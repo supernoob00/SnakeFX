@@ -1,15 +1,12 @@
 package com.somerdin.snake;
 
-import com.somerdin.snake.Point.PointInt;
-import javafx.scene.image.ImageView;
-
 public class SnakeCell {
     private Direction dir;
-    private PointInt position;
+    private Point position;
     // corner cells are animated differently
     private boolean isCorner;
 
-    public SnakeCell(Direction dir, PointInt position, boolean isCorner) {
+    public SnakeCell(Direction dir, Point position, boolean isCorner) {
         this.dir = dir;
         this.position = position;
     }
@@ -24,11 +21,11 @@ public class SnakeCell {
         return dir;
     }
 
-    public PointInt getPos() {
+    public Point getPos() {
         return position;
     }
 
-    public void setPos(PointInt newPos) {
+    public void setPos(Point newPos) {
         position = newPos;
     }
 
@@ -40,7 +37,7 @@ public class SnakeCell {
         isCorner = corner;
     }
 
-    public PointInt getNextPos() {
+    public Point getNextPos() {
         return position.go(dir);
     }
 

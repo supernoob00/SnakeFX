@@ -1,27 +1,30 @@
 package com.somerdin.snake;
 
 public enum Food {
-    APPLE,
-    CRUMBS_1,
-    CRUMBS_2,
-    CRUMBS_3,
-    CRUMBS_4,
-    CRUMBS_5,
-    CRUMBS_6;
+    RED_APPLE(2_000_000_000L, 400),
+    GREEN_APPLE(3_000_000_000L, 500),
+    YELLOW_APPLE(5_000_000_000L, 800),
+    CHERRY(10_000_000_000L, 1000),
 
-    public static Food[] CRUMBS = {CRUMBS_1, CRUMBS_2, CRUMBS_3, CRUMBS_4,
-            CRUMBS_5, CRUMBS_6};
+    CRUMB(0, 10);
 
-    private Food() {
+    private long timeAdd;
+    private int score;
 
+    private Food(long timeAdd, int score) {
+        this.timeAdd = timeAdd;
+        this.score = score;
     }
 
     public boolean isFruit() {
-        return this == APPLE;
+        return this == RED_APPLE;
     }
 
-    public boolean isCrumbs() {
-        return this == CRUMBS_1 || this == CRUMBS_2 || this == CRUMBS_3
-                || this == CRUMBS_4 || this == CRUMBS_5 || this == CRUMBS_6;
+    public long getTimeAdd() {
+        return timeAdd;
+    }
+
+    public int getScore() {
+        return score;
     }
 }

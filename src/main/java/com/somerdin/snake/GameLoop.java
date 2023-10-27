@@ -1,13 +1,12 @@
 package com.somerdin.snake;
 
-import com.somerdin.snake.Point.PointInt;
 import javafx.animation.AnimationTimer;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
+import javafx.scene.transform.Rotate;
 
 import java.util.Map;
 
@@ -15,15 +14,24 @@ import java.util.Map;
  * Calls game state update methods and handles canvas drawing and animation.
  */
 public class GameLoop {
-    public static final int CANVAS_WIDTH = 640;
-    public static final int CANVAS_HEIGHT = 640;
+    public static final int WALL_WIDTH = PixelTile.TILE_WIDTH;
+    public static final int GAMEPLAY_AREA_WIDTH = GameState.WIDTH * PixelTile.TILE_WIDTH;
+    public static final int GAMEPLAY_AREA_HEIGHT =
+            GameState.HEIGHT * PixelTile.TILE_WIDTH;
+    public static final int CANVAS_WIDTH = GAMEPLAY_AREA_WIDTH + 2 * WALL_WIDTH;
+    public static final int CANVAS_HEIGHT =
+            GAMEPLAY_AREA_HEIGHT + 2 * WALL_WIDTH;
 
     public static final int DRAW_UPDATE_FPS = 60;
 
     public static final Map<KeyCode, Direction> keyEventMap = Map.of(
+            KeyCode.A, Direction.LEFT,
             KeyCode.LEFT, Direction.LEFT,
+            KeyCode.W, Direction.UP,
             KeyCode.UP, Direction.UP,
+            KeyCode.D, Direction.RIGHT,
             KeyCode.RIGHT, Direction.RIGHT,
+            KeyCode.S, Direction.DOWN,
             KeyCode.DOWN, Direction.DOWN
     );
 
@@ -33,11 +41,9 @@ public class GameLoop {
     private int cellLength;
     private AnimationTimer timer;
 
-    private Direction queuedDirection;
-
     private long startTime;
     // the timestamp of the most recent animation cycle start
-    private long prevTime;
+    private long prevTime = 0;
     // the current timestamp; how far currently into animation cycle
     private long currentTime;
     // number of game state updates which have occurred
@@ -46,6 +52,7 @@ public class GameLoop {
     public GameLoop() {
         gameState = new GameState(GameState.WIDTH, GameState.HEIGHT);
         canvas = new Canvas(CANVAS_WIDTH, CANVAS_HEIGHT);
+        startTime = System.nanoTime();
 
         // allows the canvas to register key events
         canvas.setFocusTraversable(true);
@@ -61,7 +68,7 @@ public class GameLoop {
             else if (keyEventMap.containsKey(key.getCode())) {
                 Direction direction = keyEventMap.get(key.getCode());
                 if (direction != gameState.getSnake().getHead().getDir().opposite()) {
-                    queuedDirection = direction;
+                    gameState.setQueuedDirection(direction);
                 }
             }
         });
@@ -74,7 +81,7 @@ public class GameLoop {
         });
 
         g = canvas.getGraphicsContext2D();
-        cellLength = CANVAS_HEIGHT / GameState.HEIGHT;
+        cellLength = GAMEPLAY_AREA_HEIGHT / GameState.HEIGHT;
 
         timer = new AnimationTimer() {
             @Override
@@ -90,8 +97,11 @@ public class GameLoop {
                         frameCount = 0;
                     }
                 }
+                System.out.println(gameState.getTotalTime() - (time - startTime));
+                gameState.setTimeRemaining(gameState.getTotalTime() - (time - startTime));
             }
         };
+        drawWalls();
     }
 
     public Canvas getCanvas() {
@@ -99,26 +109,14 @@ public class GameLoop {
     }
 
     public void start() {
-        drawState();
+        drawBetweenState();
         startTime = System.nanoTime();
         timer.start();
     }
 
-    private void drawState() {
-        g.setFill(Color.WHITE);
-        g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-        drawFood();
-
-        // draw player snake
-        g.setFill(Color.BLUE);
-        for (SnakeCell sc : gameState.getSnake().getBody()) {
-            g.fillRect(
-                    sc.getPos().x() * cellLength,
-                    sc.getPos().y() * cellLength,
-                    cellLength,
-                    cellLength);
-        }
+    private void clear() {
+        g.setFill(Color.BLACK);
+        g.fillRect(WALL_WIDTH, WALL_WIDTH, GAMEPLAY_AREA_WIDTH, GAMEPLAY_AREA_HEIGHT);
     }
 
     /**
@@ -126,22 +124,20 @@ public class GameLoop {
      * states for smooth animation
      */
     private void drawBetweenState() {
-        g.setFill(Color.WHITE);
-        g.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+        clear();
 
         drawFood();
 
+        drawBlades();
+
         // draw player snake
         Snake snake = gameState.getSnake();
-        if (queuedDirection != null) {
-            snake.setDirection(queuedDirection);
-            queuedDirection = null;
-        }
         boolean headDrawn = false;
         for (SnakeCell sc : snake.getBody()) {
             if (sc.isCorner()) {
-                drawImage(PixelTile.SNAKE_BODY, sc.getPos().x() * cellLength,
-                sc.getPos().y() * cellLength);
+                drawImage(PixelTile.SNAKE_BODY,
+                        sc.getPos().x() * cellLength,
+                        sc.getPos().y() * cellLength);
             }
             double x = interpolate(sc.getPos().x() * cellLength,
                     sc.getNextPos().x() * cellLength,
@@ -150,12 +146,8 @@ public class GameLoop {
                     sc.getNextPos().y() * cellLength,
                     frameCount % snake.speed() / (double) snake.speed());
             if (!headDrawn) {
-                switch (sc.getDir()) {
-                    case UP -> drawImage(PixelTile.SNAKE_HEAD_UP, x, y);
-                    case LEFT -> drawImage(PixelTile.SNAKE_HEAD_LEFT, x, y);
-                    case DOWN -> drawImage(PixelTile.SNAKE_HEAD_DOWN, x, y);
-                    case RIGHT -> drawImage(PixelTile.SNAKE_HEAD_RIGHT, x, y);
-                }
+                PixelTile.SNAKE_HEAD.setOrientation(sc.getDir());
+                drawImage(PixelTile.SNAKE_HEAD, x, y);
                 headDrawn = true;
             } else {
                 drawImage(PixelTile.SNAKE_BODY, x, y);
@@ -163,46 +155,84 @@ public class GameLoop {
         }
     }
 
+    private void drawBlades() {
+        for (SpinBlade sb : gameState.getBlades()) {
+            double x = interpolate(sb.getPos().x() * cellLength,
+                    sb.getNextPos().x() * cellLength,
+                    frameCount % sb.speed() / (double) sb.speed());
+            double y = interpolate(sb.getPos().y() * cellLength,
+                    sb.getNextPos().y() * cellLength,
+                    frameCount % sb.speed() / (double) sb.speed());
+            PixelTile.SHURIKEN.rotate(60);
+            drawImage(PixelTile.SHURIKEN, sb.getPos().x() * cellLength,
+                    sb.getPos().y() * cellLength);
+        }
+    }
+
     private void drawFood() {
         for (int y = 0; y < gameState.height; y++) {
             for (int x = 0; x < gameState.width; x++) {
-                Food food = gameState.getFood(new PointInt(x ,y));
+                Food food = gameState.getFood(new Point(x ,y));
                 if (food != null) {
                     int displayY = y * cellLength;
                     int displayX = x * cellLength;
                     switch (food) {
-                        case APPLE:
+                        case RED_APPLE:
                             drawImage(PixelTile.APPLE, displayX, displayY);
                             break;
-                        default:
-                            switch (food) {
-                                case CRUMBS_1 -> drawImage(PixelTile.CRUMBS_1,
-                                        displayX, displayY);
-                                case CRUMBS_2 -> drawImage(PixelTile.CRUMBS_2
-                                        , displayX, displayY);
-                                case CRUMBS_3 -> drawImage(PixelTile.CRUMBS_3
-                                        , displayX, displayY);
-                                case CRUMBS_4 -> drawImage(PixelTile.CRUMBS_4
-                                        , displayX, displayY);
-                                case CRUMBS_5 -> drawImage(PixelTile.CRUMBS_5
-                                        , displayX, displayY);
-                                case CRUMBS_6 -> drawImage(PixelTile.CRUMBS_6
-                                        , displayX, displayY);
-                            }
+                        case CRUMB:
+                            drawImage(PixelTile.CRUMB, displayX, displayY);
+                            break;
                     }
                 }
             }
         }
     }
 
-    private void drawImage(ImageView toDraw, double x, double y) {
-        Rectangle2D viewport = toDraw.getViewport();
-        g.drawImage(toDraw.getImage(), viewport.getMinX(),
-                viewport.getMinY(), viewport.getWidth(),
-                viewport.getHeight(), x, y, viewport.getWidth(), viewport.getHeight());
+    private void drawImage(PixelTile toDraw, double x, double y) {
+        g.save(); // saves the current state on stack, including the current transform
+        rotate(g, toDraw.getRotate(), x + toDraw.width() / 2,
+                y + toDraw.height() / 2);
+        g.drawImage(toDraw.getImage(), toDraw.getX(),
+                toDraw.getY(), toDraw.width(),
+                toDraw.height(), x + WALL_WIDTH, y + WALL_WIDTH,
+                toDraw.width(),
+                toDraw.height());
+        g.restore();
     }
 
     private double interpolate(double a, double b, double f) {
         return a + f * (b - a);
+    }
+
+    /**
+     * Sets the transform for the GraphicsContext to rotate around a pivot point.
+     *
+     * @param gc the graphics context the transform to applied to.
+     * @param angle the angle of rotation.
+     * @param px the x pivot co-ordinate for the rotation (in canvas co-ordinates).
+     * @param py the y pivot co-ordinate for the rotation (in canvas co-ordinates).
+     */
+    private void rotate(GraphicsContext gc, double angle, double px, double py) {
+        Rotate r = new Rotate(angle, px + WALL_WIDTH, py + WALL_WIDTH);
+        gc.setTransform(r.getMxx(), r.getMyx(), r.getMxy(), r.getMyy(), r.getTx(), r.getTy());
+    }
+
+    private void drawWalls() {
+        for (int i = 0; i <= gameState.width + 1; i++) {
+            for (int j = 0; j <= gameState.height + 1; j++) {
+                if (i == 0 || i == gameState.width + 1
+                        || j == 0 || j == gameState.height + 1) {
+                    int x = i * cellLength;
+                    int y = j * cellLength;
+                    Rectangle2D viewport = PixelTile.WALL_IMG.getViewport();
+                    g.drawImage(PixelTile.WALL_IMG.getImage(), viewport.getMinX(),
+                            viewport.getMinY(), viewport.getWidth(),
+                            viewport.getHeight(), x, y,
+                            viewport.getWidth(),
+                            viewport.getHeight());
+                }
+            }
+        }
     }
 }

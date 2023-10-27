@@ -1,7 +1,5 @@
 package com.somerdin.snake;
 
-import java.time.LocalDate;
-
 public enum Direction {
     UP(0, -1),
     DOWN(0, 1),
@@ -22,6 +20,13 @@ public enum Direction {
             case DOWN -> UP;
             case LEFT -> RIGHT;
             case RIGHT -> LEFT;
+        };
+    }
+
+    public Direction[] orthogonal() {
+        return switch (this) {
+            case UP, DOWN -> new Direction[] {LEFT, RIGHT};
+            case LEFT, RIGHT -> new Direction[] {UP, DOWN};
         };
     }
 }
