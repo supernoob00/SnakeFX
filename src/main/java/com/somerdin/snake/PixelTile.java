@@ -18,8 +18,14 @@ public final class PixelTile {
             new ImageView(PRIMARY_TILESET);
     private static final ImageView SNAKE_BODY_IMG =
             new ImageView(PRIMARY_TILESET);
-    private static final ImageView APPLE_IMG = new ImageView(PRIMARY_TILESET);
+    private static final ImageView RED_APPLE_IMG = new ImageView(PRIMARY_TILESET);
+    private static final ImageView GREEN_APPLE_IMG =
+            new ImageView(PRIMARY_TILESET);
+    private static final ImageView YELLOW_APPLE_IMG =
+            new ImageView(PRIMARY_TILESET);
+    private static final ImageView CHERRY_IMG = new ImageView(PRIMARY_TILESET);
     private static final ImageView CRUMB_IMG = new ImageView(PRIMARY_TILESET);
+    private static final ImageView EMPTY_IMG = new ImageView(PRIMARY_TILESET);
     // TODO: add separate "absoluteDraw" method to gameloop
     public static final ImageView WALL_IMG = new ImageView(PRIMARY_TILESET);
     public static final ImageView SHURIKEN_IMG = new ImageView(PRIMARY_TILESET);
@@ -28,8 +34,12 @@ public final class PixelTile {
     static {
         SNAKE_HEAD_IMG.setViewport(getViewport(1, 3));
         SNAKE_BODY_IMG.setViewport(getViewport(5, 3));
-        APPLE_IMG.setViewport(getViewport(6, 0));
+        RED_APPLE_IMG.setViewport(getViewport(6, 0));
+        GREEN_APPLE_IMG.setViewport(getViewport(6, 1));
+        YELLOW_APPLE_IMG.setViewport(getViewport(6, 4));
+        CHERRY_IMG.setViewport(getViewport(6, 3));
         CRUMB_IMG.setViewport(getViewport(6, 5));
+        EMPTY_IMG.setViewport(getViewport(5, 6));
         WALL_IMG.setViewport(getViewport(12, 0));
         SHURIKEN_IMG.setViewport(getViewport(1, 6));
     }
@@ -38,8 +48,9 @@ public final class PixelTile {
             new PixelTile(PixelTile.SNAKE_HEAD_IMG);
     public static final PixelTile SNAKE_BODY =
             new PixelTile(PixelTile.SNAKE_BODY_IMG);
-    public static final PixelTile APPLE = new PixelTile(PixelTile.APPLE_IMG);
+    public static final PixelTile APPLE = new PixelTile(PixelTile.RED_APPLE_IMG);
     public static final PixelTile CRUMB = new PixelTile(PixelTile.CRUMB_IMG);
+    public static final PixelTile EMPTY = new PixelTile(PixelTile.EMPTY_IMG);
     public static final PixelTile WALL = new PixelTile(PixelTile.WALL_IMG);
     public static final PixelTile SHURIKEN =
             new PixelTile(PixelTile.SHURIKEN_IMG);

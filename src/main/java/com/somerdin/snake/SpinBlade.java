@@ -37,7 +37,7 @@ public class SpinBlade {
                 && (Math.abs(p.y() - position.y()) <= size);
     }
 
-    public boolean containsAnyPoint(Collection<Point> points) {
+    public boolean containsAnyPoint(Iterable<Point> points) {
         for (Point p : points) {
             if (containsPointInt(p)) {
                 return true;
@@ -51,6 +51,9 @@ public class SpinBlade {
     }
 
     public void move() {
+        if (!isMoving()) {
+            return;
+        }
         double epsilon = 0.01;
         Direction next;
         if (Math.abs(distTraveled - 1) < epsilon) {
@@ -63,6 +66,10 @@ public class SpinBlade {
         System.out.println(path.size());
         position = position.go(next, speed);
         distTraveled += speed;
+    }
+
+    public boolean isMoving() {
+        return path.getDrawn() >= path.size();
     }
 
 

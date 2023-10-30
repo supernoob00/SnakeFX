@@ -7,27 +7,27 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class Snake implements Mover {
-    // how many tiles the snake moves per second
     public static final int FRAMES_TO_MOVE = 5;
-    public static final int BOOSTED_FRAMES_TO_MOVE = 3;
+    public static final int FRAMES_TO_MOVE_BOOSTED = 2;
+    public static final int INITIAL_SIZE  = 4;
+
+    private static final int MAX_COOLDOWN = 30;
+    private static final int COOLDOWN_DECREMENT = 2;
 
     private Deque<SnakeCell> cells;
-    private int length;
     private int speed;
+    private int boostGauge = 100;
+    private int boostCooldown = 0;
+    private boolean invulnerable = false;
 
-    public Snake(SnakeCell head, int length) {
-        if (length <= 0) {
-            throw new IllegalArgumentException();
-        }
-
-        this.length = length;
+    public Snake(SnakeCell head) {
         this.speed = FRAMES_TO_MOVE;
 
-        cells = new ArrayDeque<>(length);
+        cells = new ArrayDeque<>();
 
         SnakeCell next = head;
         Direction makeDir = head.getDir().opposite();
-        for (int i = 0; i < length; i++) {
+        for (int i = 0; i < INITIAL_SIZE; i++) {
             cells.addLast(next);
             next = new SnakeCell(head.getDir(), next.getPos().go(makeDir),
                     false);
@@ -39,7 +39,7 @@ public class Snake implements Mover {
     }
 
     public void speedUp() {
-        speed = Snake.BOOSTED_FRAMES_TO_MOVE;
+        speed = Snake.FRAMES_TO_MOVE_BOOSTED;
     }
 
     public void slowDown() {
@@ -52,10 +52,6 @@ public class Snake implements Mover {
 
     public SnakeCell getTail() {
         return cells.getLast();
-    }
-
-    public int length() {
-        return length;
     }
 
     public boolean headOnBody() {
@@ -74,11 +70,11 @@ public class Snake implements Mover {
         return cells.stream().anyMatch(sc -> sc.getPos().equals(p));
     }
 
-    public SnakeCell[] getBody() {
-        return cells.toArray(new SnakeCell[0]);
+    public Iterable<SnakeCell> getBody() {
+        return cells;
     }
 
-    public List<Point> getPoints() {
+    public Iterable<Point> getPoints() {
         return cells.stream()
                 .map(SnakeCell::getPos)
                 .collect(Collectors.toList());
@@ -95,6 +91,20 @@ public class Snake implements Mover {
     }
 
     public void move() {
+        if (boostGauge == 0) {
+            speed = FRAMES_TO_MOVE;
+            boostCooldown = MAX_COOLDOWN;
+        }
+        if (speed == FRAMES_TO_MOVE) {
+            if (boostCooldown > 0) {
+                boostCooldown--;
+            } else if (boostGauge <= 98){
+                boostGauge += COOLDOWN_DECREMENT;
+            }
+        } else if (boostGauge >= COOLDOWN_DECREMENT
+                && speed == FRAMES_TO_MOVE_BOOSTED) {
+            boostGauge -= COOLDOWN_DECREMENT;
+        }
         cells.addFirst(new SnakeCell(getHead().getDir(), getHead().getNextPos(), false));
         cells.removeLast();
         getTail().setCorner(false);
@@ -107,6 +117,29 @@ public class Snake implements Mover {
                 getTail().getPos().go(tailDir.opposite()),
                 false);
         cells.addLast(newTail);
-        length++;
+    }
+
+    public int getBoostGauge() {
+        return boostGauge;
+    }
+
+    public int getSpeed() {
+        return speed;
+    }
+
+    public void resetCooldown() {
+        boostCooldown = MAX_COOLDOWN;
+    }
+
+    public boolean hasBoost() {
+        return boostGauge >= COOLDOWN_DECREMENT;
+    }
+
+    public boolean hasCooldown() {
+        return boostCooldown > 0;
+    }
+
+    public boolean isInvulnerable() {
+        return invulnerable;
     }
 }

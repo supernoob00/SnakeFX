@@ -8,6 +8,7 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 import javafx.scene.transform.Rotate;
 
+import java.util.Iterator;
 import java.util.Map;
 
 /**
@@ -15,12 +16,17 @@ import java.util.Map;
  */
 public class GameLoop {
     public static final int WALL_WIDTH = PixelTile.TILE_WIDTH;
-    public static final int GAMEPLAY_AREA_WIDTH = GameState.WIDTH * PixelTile.TILE_WIDTH;
-    public static final int GAMEPLAY_AREA_HEIGHT =
+    public static final int PLAYABLE_AREA_WIDTH = GameState.WIDTH * PixelTile.TILE_WIDTH;
+    public static final int PLAYABLE_AREA_HEIGHT =
             GameState.HEIGHT * PixelTile.TILE_WIDTH;
-    public static final int CANVAS_WIDTH = GAMEPLAY_AREA_WIDTH + 2 * WALL_WIDTH;
+    public static final int CANVAS_WIDTH = PLAYABLE_AREA_WIDTH + 2 * WALL_WIDTH;
     public static final int CANVAS_HEIGHT =
-            GAMEPLAY_AREA_HEIGHT + 2 * WALL_WIDTH;
+            PLAYABLE_AREA_HEIGHT + 2 * WALL_WIDTH;
+    public static final int GAME_INFO_WIDTH = 150;
+    public static final int TOTAL_WIDTH = CANVAS_WIDTH + GAME_INFO_WIDTH;
+
+    public static final Color GAME_INFO_BACKGROUND = Color.LIGHTBLUE;
+    public static final Color GAME_INFO_TEXT_COLOR = Color.BLACK;
 
     public static final int DRAW_UPDATE_FPS = 60;
 
@@ -49,9 +55,9 @@ public class GameLoop {
     // number of game state updates which have occurred
     private long frameCount = 0;
 
-    public GameLoop() {
+    public GameLoop(Canvas canvas) {
         gameState = new GameState(GameState.WIDTH, GameState.HEIGHT);
-        canvas = new Canvas(CANVAS_WIDTH, CANVAS_HEIGHT);
+        this.canvas = new Canvas(TOTAL_WIDTH, CANVAS_HEIGHT);
         startTime = System.nanoTime();
 
         // allows the canvas to register key events
@@ -59,8 +65,9 @@ public class GameLoop {
 
         // key press listeners on canvas
         canvas.setOnKeyPressed(key -> {
-            // space bar (boost) key pressed
-            if (key.getCode() == KeyCode.SPACE) {
+            if (key.getCode() == KeyCode.SPACE
+                    && gameState.getSnake().hasBoost()
+                    && !gameState.getSnake().hasCooldown() ) {
                 gameState.getSnake().speedUp();
             }
             // arrow key pressed; only change snake direction if key pressed not
@@ -77,11 +84,14 @@ public class GameLoop {
         canvas.setOnKeyReleased(key -> {
             if (key.getCode() == KeyCode.SPACE) {
                 gameState.getSnake().slowDown();
+                if (gameState.getSnake().getBoostGauge() < 50) {
+                    gameState.getSnake().resetCooldown();
+                }
             }
         });
 
         g = canvas.getGraphicsContext2D();
-        cellLength = GAMEPLAY_AREA_HEIGHT / GameState.HEIGHT;
+        cellLength = PLAYABLE_AREA_HEIGHT / GameState.HEIGHT;
 
         timer = new AnimationTimer() {
             @Override
@@ -116,7 +126,9 @@ public class GameLoop {
 
     private void clear() {
         g.setFill(Color.BLACK);
-        g.fillRect(WALL_WIDTH, WALL_WIDTH, GAMEPLAY_AREA_WIDTH, GAMEPLAY_AREA_HEIGHT);
+        g.fillRect(WALL_WIDTH, WALL_WIDTH, PLAYABLE_AREA_WIDTH, PLAYABLE_AREA_HEIGHT);
+        g.setFill(Color.LIGHTBLUE);
+        g.fillRect(CANVAS_WIDTH, 0, GAME_INFO_WIDTH, CANVAS_HEIGHT);
     }
 
     /**
@@ -153,18 +165,32 @@ public class GameLoop {
                 drawImage(PixelTile.SNAKE_BODY, x, y);
             }
         }
+        drawWalls();
+        drawGameInfo();
     }
 
     private void drawBladesAndPaths() {
         for (SpinBlade sb : gameState.getBlades()) {
             Point current = sb.getBladePath().getStart();
-            for (Direction dir : sb.getBladePath().getPath()) {
+            Iterator<Direction> it = sb.getBladePath().getPath().iterator();
+            int i = 0;
+            boolean first = true;
+            while (it.hasNext() && i < sb.getBladePath().getDrawn()) {
+                Direction dir = it.next();
                 PixelTile.BLADE_PATH.setOrientation(dir);
-                drawImage(PixelTile.BLADE_PATH, current.x() * cellLength,
-                        current.y() * cellLength);
+                if (first && sb.isMoving()) {
+                    drawImage(PixelTile.BLADE_PATH,
+                            sb.getPos().x() * cellLength,
+                            sb.getPos().y() * cellLength);
+                } else {
+                    drawImage(PixelTile.BLADE_PATH, current.x() * cellLength,
+                            current.y() * cellLength);
+                }
                 current = current.go(dir);
+                first = false;
+                i++;
             }
-            PixelTile.SHURIKEN.rotate(60);
+            PixelTile.SHURIKEN.rotate(10);
             drawImage(PixelTile.SHURIKEN, sb.getPos().x() * cellLength,
                     sb.getPos().y() * cellLength);
         }
@@ -235,5 +261,35 @@ public class GameLoop {
                 }
             }
         }
+    }
+
+    private void drawGameInfo() {
+        g.setFill(Color.BLACK);
+        g.fillText("SCORE", CANVAS_WIDTH + 20, 50);
+        g.fillText(String.valueOf(gameState.getScore()), CANVAS_WIDTH + 20, 80);
+        g.fillText("MULTIPLIER", CANVAS_WIDTH + 20, 70);
+        System.out.println(gameState.getScoreMultiplier());
+        g.fillText("TIME LEFT", CANVAS_WIDTH  + 20, 120);
+        g.fillText(String.valueOf(gameState.getTimeRemaining()),
+                CANVAS_WIDTH + 20, 160);
+        g.fillText(String.valueOf(gameState.getSnake().getBoostGauge()),
+                CANVAS_WIDTH + 20, 400);
+        g.fillText(String.valueOf(gameState.getSnake().getSpeed()),
+                CANVAS_WIDTH + 20, 550);
+        drawBoostGauge(CANVAS_WIDTH + 20, 500);
+    }
+
+    private void drawBoostGauge(double x, double y) {
+        g.setFill(GAME_INFO_TEXT_COLOR);
+        g.setLineWidth(5);
+        double outerLength = 60;
+        double outerWidth = 20;
+        g.strokeRect(x, y, outerLength, outerWidth);
+
+        g.setFill(Color.RED);
+        double innerLength = outerLength * 0.9;
+        double innerWidth = outerWidth * 0.9;
+        g.fillRect(x + outerLength / 2 - innerLength / 2,
+                y + outerWidth / 2 - innerWidth / 2, innerLength, innerWidth);
     }
 }

@@ -1,12 +1,19 @@
 package com.somerdin.snake;
 
 public enum Food {
-    RED_APPLE(2_000_000_000L, 400),
-    GREEN_APPLE(3_000_000_000L, 500),
+    RED_APPLE(5_000_000_000L, 400),
+    GREEN_APPLE(5_000_000_000L, 500),
     YELLOW_APPLE(5_000_000_000L, 800),
     CHERRY(10_000_000_000L, 1000),
 
     CRUMB(0, 10);
+
+    public static final Food[] FRUITS = new Food[] {
+            RED_APPLE,
+            GREEN_APPLE,
+            YELLOW_APPLE,
+            CHERRY
+    };
 
     private long timeAdd;
     private int score;

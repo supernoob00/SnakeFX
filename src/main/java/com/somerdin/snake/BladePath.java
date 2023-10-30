@@ -4,8 +4,11 @@ import java.util.ArrayDeque;
 import java.util.Deque;
 
 public class BladePath {
+    public static final int PATH_DRAW_SPEED = 5;
+
     private Point start;
     private Deque<Direction> path = new ArrayDeque<>();
+    private int drawn;
 
     public BladePath(Direction initialDirection, Point start) {
         for (int i = 0; i < 5; i++) {
@@ -94,5 +97,14 @@ public class BladePath {
         } else {
             return new Direction[] {start, current};
         }
+    }
+
+    public int getDrawn() {
+        return drawn;
+    }
+
+    public int addDrawn() {
+        drawn++;
+        return drawn;
     }
 }
