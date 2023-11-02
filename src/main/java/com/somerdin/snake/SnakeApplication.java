@@ -1,6 +1,5 @@
 package com.somerdin.snake;
 
-import javafx.animation.AnimationTimer;
 import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
@@ -18,8 +17,7 @@ public class SnakeApplication extends Application {
 
     @Override
     public void start(Stage stage) throws IOException {
-        Canvas canvas = new Canvas(GameLoop.TOTAL_WIDTH,
-                GameLoop.CANVAS_HEIGHT);
+        Canvas canvas = new Canvas(GameLoop.TOTAL_WIDTH, GameLoop.TOTAL_HEIGHT);
         canvas.setFocusTraversable(true);
 
         TitleScreen title = new TitleScreen(canvas);

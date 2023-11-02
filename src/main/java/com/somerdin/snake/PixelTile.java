@@ -5,14 +5,18 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 
 public final class PixelTile {
+    public static final int TILE_WIDTH_PIXELS = 8;
     private static final int SCALE_FACTOR = 3;
+    public static final int TILE_WIDTH_ACTUAL = 8 * SCALE_FACTOR;
+    public static final int PIXEL_WIDTH = TILE_WIDTH_ACTUAL / TILE_WIDTH_PIXELS;
+
     private static final Image PRIMARY_TILESET =
-            new Image(PixelTile.class.getResourceAsStream("/snake.png"),
+            new Image(PixelTile.class.getResourceAsStream("/snake_transparent" +
+                    ".png"),
                     128 * SCALE_FACTOR,
                     128 * SCALE_FACTOR, true, false);
     public static final int PRIMARY_TILESET_WIDTH =
             (int) PRIMARY_TILESET.getWidth();
-    public static final int TILE_WIDTH = 8 * SCALE_FACTOR;
 
     private static final ImageView SNAKE_HEAD_IMG =
             new ImageView(PRIMARY_TILESET);
@@ -58,8 +62,8 @@ public final class PixelTile {
             new PixelTile(PixelTile.WALL_IMG);
 
     private static Rectangle2D getViewport(int x, int y) {
-        return new Rectangle2D(x * TILE_WIDTH, y * TILE_WIDTH, TILE_WIDTH,
-                TILE_WIDTH);
+        return new Rectangle2D(x * TILE_WIDTH_ACTUAL, y * TILE_WIDTH_ACTUAL, TILE_WIDTH_ACTUAL,
+                TILE_WIDTH_ACTUAL);
     }
 
     private ImageView imgView;

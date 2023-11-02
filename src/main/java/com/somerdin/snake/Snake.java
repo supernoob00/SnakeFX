@@ -1,9 +1,10 @@
 package com.somerdin.snake;
 
+import com.somerdin.snake.Point.PointInt;
+
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.Iterator;
-import java.util.List;
 import java.util.stream.Collectors;
 
 public class Snake implements Mover {
@@ -58,7 +59,7 @@ public class Snake implements Mover {
         Iterator<SnakeCell> iter = cells.iterator();
         iter.next();
         while (iter.hasNext()) {
-            Point p= iter.next().getPos();
+            PointInt p= iter.next().getPos();
             if (p.equals(getHead().getPos())) {
                 return true;
             }
@@ -66,7 +67,7 @@ public class Snake implements Mover {
         return false;
      }
 
-    public boolean containsPoint(Point p) {
+    public boolean containsPoint(PointInt p) {
         return cells.stream().anyMatch(sc -> sc.getPos().equals(p));
     }
 
@@ -74,7 +75,7 @@ public class Snake implements Mover {
         return cells;
     }
 
-    public Iterable<Point> getPoints() {
+    public Iterable<PointInt> getPoints() {
         return cells.stream()
                 .map(SnakeCell::getPos)
                 .collect(Collectors.toList());
@@ -91,16 +92,15 @@ public class Snake implements Mover {
     }
 
     public void move() {
-        if (boostGauge == 0) {
-            speed = FRAMES_TO_MOVE;
-            boostCooldown = MAX_COOLDOWN;
-        }
-        if (speed == FRAMES_TO_MOVE) {
+         if (speed == FRAMES_TO_MOVE) {
             if (boostCooldown > 0) {
                 boostCooldown--;
             } else if (boostGauge <= 98){
                 boostGauge += COOLDOWN_DECREMENT;
             }
+        } else if (boostGauge == 0 && boostCooldown == 0) {
+            speed = FRAMES_TO_MOVE;
+            boostCooldown = MAX_COOLDOWN;
         } else if (boostGauge >= COOLDOWN_DECREMENT
                 && speed == FRAMES_TO_MOVE_BOOSTED) {
             boostGauge -= COOLDOWN_DECREMENT;

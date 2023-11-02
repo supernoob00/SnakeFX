@@ -29,4 +29,13 @@ public enum Direction {
             case LEFT, RIGHT -> new Direction[] {UP, DOWN};
         };
     }
+
+    public double getAngle() {
+        return switch (this) {
+            case UP -> -90;
+            case DOWN -> 90;
+            case LEFT -> 180;
+            case RIGHT -> 0;
+        };
+    }
 }

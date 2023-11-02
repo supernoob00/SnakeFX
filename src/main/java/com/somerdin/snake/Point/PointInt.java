@@ -1,37 +1,39 @@
-package com.somerdin.snake;
+package com.somerdin.snake.Point;
+
+import com.somerdin.snake.Direction;
 
 import java.util.Objects;
 import java.util.*;
 
-public record Point(int x, int y) {
-    public static double interX(Point p1, Point p2, double d) {
+public record PointInt(int x, int y) {
+    public static double interX(PointInt p1, PointInt p2, double d) {
         if (d < 0 || d > 1) {
             throw new IllegalArgumentException();
         }
         return (double) p1.x + (d * (p2.x - p1.x));
     }
 
-    public static double interY(Point p1, Point p2, double d) {
+    public static double interY(PointInt p1, PointInt p2, double d) {
         if (d < 0 || d > 1) {
             throw new IllegalArgumentException();
         }
         return (double) p1.y + (d * (p2.y - p1.y));
     }
 
-    public Point add(int x, int y) {
-        return new Point(this.x + x, this.y + y);
+    public PointInt add(int x, int y) {
+        return new PointInt(this.x + x, this.y + y);
     }
 
-    public Point add(Point p) {
+    public PointInt add(PointInt p) {
         return add(p.x, p.y);
     }
 
-    public Point go(Direction direction) {
+    public PointInt go(Direction direction) {
         return add(direction.dx, direction.dy);
     }
 
-    public Point goFollowPath(Collection<Direction> path) {
-        Point p = this;
+    public PointInt goFollowPath(Collection<Direction> path) {
+        PointInt p = this;
         for (Direction d : path) {
             p = p.go(d);
         }
@@ -46,8 +48,8 @@ public record Point(int x, int y) {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Point point = (Point) o;
-        return x == point.x && y == point.y;
+        PointInt pointInt = (PointInt) o;
+        return x == pointInt.x && y == pointInt.y;
     }
 
     @Override

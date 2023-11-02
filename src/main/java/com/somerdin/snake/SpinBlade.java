@@ -1,6 +1,7 @@
 package com.somerdin.snake;
 
-import java.util.Collection;
+import com.somerdin.snake.Point.PointDouble;
+import com.somerdin.snake.Point.PointInt;
 
 public class SpinBlade {
     public static final double SLOW_BLADE_SPEED = 0.05;
@@ -19,7 +20,7 @@ public class SpinBlade {
         this.speed = speed;
         this.size = size;
         this.distTraveled = 0;
-        this.path = new BladePath(direction, new Point((int) position.x(),
+        this.path = new BladePath(direction, new PointInt((int) position.x(),
                 (int) position.y()));
     }
 
@@ -32,13 +33,13 @@ public class SpinBlade {
                 && (Math.abs(p.y() - position.y()) <= size);
     }
 
-    public boolean containsPointInt(Point p) {
+    public boolean containsPointInt(PointInt p) {
         return (Math.abs(p.x() - position.x()) <= size)
                 && (Math.abs(p.y() - position.y()) <= size);
     }
 
-    public boolean containsAnyPoint(Iterable<Point> points) {
-        for (Point p : points) {
+    public boolean containsAnyPoint(Iterable<PointInt> points) {
+        for (PointInt p : points) {
             if (containsPointInt(p)) {
                 return true;
             }
@@ -62,7 +63,6 @@ public class SpinBlade {
         } else {
             next = path.getFirst();
         }
-        System.out.println("pos: " + position);
         System.out.println(path.size());
         position = position.go(next, speed);
         distTraveled += speed;

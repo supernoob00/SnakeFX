@@ -43,6 +43,7 @@ public class TitleScreen {
 
         canvas.setOnKeyPressed(keyEvent -> {
             System.out.println("Key pressed");
+            canvas.setFocusTraversable(false);
             timer.stop();
             GameLoop loop = new GameLoop(canvas);
             loop.start();

@@ -1,4 +1,6 @@
-package com.somerdin.snake;
+package com.somerdin.snake.Point;
+
+import com.somerdin.snake.Direction;
 
 public record PointDouble(double x, double y) {
 

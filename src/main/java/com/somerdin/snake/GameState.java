@@ -1,15 +1,18 @@
 package com.somerdin.snake;
 
+import com.somerdin.snake.Point.PointDouble;
+import com.somerdin.snake.Point.PointInt;
+
 import java.util.*;
 
 public class GameState {
     public static final int WIDTH = 25;
     public static final int HEIGHT = 25;
 
-    Point TOP_LEFT = new Point(0, 0);
-    Point BOTTOM_LEFT = new Point(0, HEIGHT - 1);
-    Point BOTTOM_RIGHT = new Point(HEIGHT - 1, HEIGHT - 1);
-    Point TOP_RIGHT = new Point(HEIGHT - 1, 0);
+    PointInt TOP_LEFT = new PointInt(0, 0);
+    PointInt BOTTOM_LEFT = new PointInt(0, HEIGHT - 1);
+    PointInt BOTTOM_RIGHT = new PointInt(HEIGHT - 1, HEIGHT - 1);
+    PointInt TOP_RIGHT = new PointInt(HEIGHT - 1, 0);
 
     public final Food[][] food;
     public int crumbCount;
@@ -17,7 +20,12 @@ public class GameState {
     public final int height;
 
     private final Snake snake;
+    // particle coordinates are actual coordinates on canvas
+    private ParticleManager snakeParticles;
+    private boolean isExploding;
+    private boolean isGameOver;
     private final Deque<SpinBlade> blades = new ArrayDeque<>();
+    private long snakeExplodeTimestamp;
 
     private Direction queuedDirection;
     private long totalTime = 30_000_000_000L;
@@ -32,12 +40,9 @@ public class GameState {
         this.width = width;
         this.height = height;
 
-        snake = new Snake(new SnakeCell(Direction.RIGHT, new Point(3, 3), false));
-        for (int i = 5; i < 10; i++) {
-            for (int j = 5; j < 10; j++) {
-                placeFood(new Point(i, j), Food.CRUMB);
-            }
-        }
+        snake = new Snake(new SnakeCell(Direction.RIGHT, new PointInt(3, 3), false));
+        mazePattern();
+        placeFood(new PointInt(0, 0), Food.RED_APPLE);
         // TODO: food should be at random location
         spawnFruit();
         spawnBlade();
@@ -47,14 +52,13 @@ public class GameState {
         return this.snake;
     }
 
-    public Food getFood(Point p) {
+    public Food getFood(PointInt p) {
         return food[(int) p.y()][(int) p.x()];
     }
 
-    public void placeFood(Point p, Food food) {
+    public void placeFood(PointInt p, Food food) {
         Food existing = this.food[p.y()][p.x()];
         if (existing == Food.CRUMB && food.isFruit()) {
-            System.out.println("called1");
             crumbCount--;
         } else if (food == Food.CRUMB && existing != Food.CRUMB) {
             crumbCount++;
@@ -62,11 +66,10 @@ public class GameState {
         this.food[p.y()][p.x()] = food;
     }
 
-    private void removeFood(Point p) {
+    private void removeFood(PointInt p) {
         Food food = this.food[p.y()][p.x()];
         this.food[p.y()][p.x()] = null;
         if (food == Food.CRUMB) {
-            System.out.println("called2");
             crumbCount--;
         }
         if (crumbCount == 0) {
@@ -120,7 +123,7 @@ public class GameState {
         snake.move();
 
         if (snake.headOnBody()) {
-            System.exit(0);
+            makeSnakeExplode();
         }
 
         Food foodAtHead = getFood(snake.getHead().getPos());
@@ -128,7 +131,6 @@ public class GameState {
             removeFood(snake.getHead().getPos());
             totalTime += foodAtHead.getTimeAdd();
             score += foodAtHead.getScore();
-            System.out.println(foodAtHead.getTimeAdd());
             System.out.println(score);
             if (foodAtHead.isFruit()) {
                 spawnFruit();
@@ -141,7 +143,7 @@ public class GameState {
         // max amount of attempts to spawn food in a random location,
         // in case something has gone horribly awry
         int maxTriesLeft = 1000;
-        Point random = getRandomPoint();
+        PointInt random = getRandomPoint();
         Food existing = getFood(random);
         while (snake.containsPoint(random)
                 || existing != null
@@ -151,59 +153,59 @@ public class GameState {
             maxTriesLeft--;
         }
         Food foodToPlace;
-        double randomDouble = Math.random();
+        double typeOfFruitProbability = Math.random();
         switch (stage) {
             case 1:
                 foodToPlace = Food.RED_APPLE;
                 break;
             case 2:
-                if (randomDouble < 0.5) {
+                if (typeOfFruitProbability < 0.5) {
                     foodToPlace = Food.RED_APPLE;
-                } else if (randomDouble < 0.8) {
+                } else if (typeOfFruitProbability < 0.8) {
                     foodToPlace = Food.GREEN_APPLE;
                 } else {
                     foodToPlace = Food.RED_APPLE;
                 }
                 break;
             case 3:
-                if (randomDouble < 0.6) {
+                if (typeOfFruitProbability < 0.6) {
                     foodToPlace = Food.GREEN_APPLE;
-                } else if (randomDouble < 0.75) {
+                } else if (typeOfFruitProbability < 0.75) {
                     foodToPlace = Food.YELLOW_APPLE;
-                } else if (randomDouble < 0.85) {
+                } else if (typeOfFruitProbability < 0.85) {
                     foodToPlace = Food.RED_APPLE;
                 } else {
                     foodToPlace = Food.CHERRY;
                 }
                 break;
             case 4:
-                if (randomDouble < 0.65) {
+                if (typeOfFruitProbability < 0.65) {
                     foodToPlace = Food.YELLOW_APPLE;
-                } else if (randomDouble < 0.75) {
+                } else if (typeOfFruitProbability < 0.75) {
                     foodToPlace = Food.GREEN_APPLE;
-                } else if (randomDouble < 0.85) {
+                } else if (typeOfFruitProbability < 0.85) {
                     foodToPlace = Food.RED_APPLE;
                 } else {
                     foodToPlace = Food.CHERRY;
                 }
                 break;
             case 5:
-                if (randomDouble < 0.7) {
+                if (typeOfFruitProbability < 0.7) {
                     foodToPlace = Food.YELLOW_APPLE;
-                } else if (randomDouble < 0.75) {
+                } else if (typeOfFruitProbability < 0.75) {
                     foodToPlace = Food.GREEN_APPLE;
-                } else if (randomDouble < 0.85) {
+                } else if (typeOfFruitProbability < 0.85) {
                     foodToPlace = Food.RED_APPLE;
                 } else {
                     foodToPlace = Food.CHERRY;
                 }
                 break;
             default:
-                if (randomDouble < 0.6) {
+                if (typeOfFruitProbability < 0.6) {
                     foodToPlace = Food.YELLOW_APPLE;
-                } else if (randomDouble < 0.75) {
+                } else if (typeOfFruitProbability < 0.75) {
                     foodToPlace = Food.GREEN_APPLE;
-                } else if (randomDouble < 0.85) {
+                } else if (typeOfFruitProbability < 0.85) {
                     foodToPlace = Food.RED_APPLE;
                 } else {
                     foodToPlace = Food.CHERRY;
@@ -213,28 +215,28 @@ public class GameState {
     }
 
     public void spawnBlade() {
-        int rand1 = (int) (Math.random() * width);
-        int rand2 = (int) (Math.random() * 4);
+        int spawnPlacement = (int) (Math.random() * width);
+        int spawnSide = (int) (Math.random() * 4);
         double speed = SpinBlade.SLOW_BLADE_SPEED;
         double size = 0.75;
 
         PointDouble start;
         SpinBlade blade = null;
-        switch (rand2) {
+        switch (spawnSide) {
             case 0:
-                start = new PointDouble(rand1, -1);
+                start = new PointDouble(spawnPlacement, -1);
                 blade = new SpinBlade(start, Direction.DOWN, speed, size);
                 break;
             case 1:
-                start = new PointDouble(rand1, width + 1);
+                start = new PointDouble(spawnPlacement, width + 1);
                 blade = new SpinBlade(start, Direction.UP, speed, size);
                 break;
             case 2:
-                start = new PointDouble(-1, rand1);
+                start = new PointDouble(-1, spawnPlacement);
                 blade = new SpinBlade(start, Direction.RIGHT, speed, size);
                 break;
             case 3:
-                start = new PointDouble(width + 1, rand1);
+                start = new PointDouble(width + 1, spawnPlacement);
                 blade = new SpinBlade(start, Direction.LEFT, speed, size);
                 break;
         }
@@ -260,42 +262,50 @@ public class GameState {
     }
 
     public void update(long updateCount) {
-        // TODO: unexpected behavior if game state update fps is not
-        //  divisible by snake speed
-        if (updateCount % snake.speed() == 0) {
-            if (queuedDirection != null) {
-                snake.setDirection(queuedDirection);
-                queuedDirection = null;
+        if (snakeIsExploding()) {
+            if (snakeParticles.isMoving()) {
+                snakeParticles.updatePos(1);
+                System.out.println("moving");
             }
-            moveSnake();
-        }
 
-        Iterator<SpinBlade> it = blades.iterator();
-        while (it.hasNext()) {
-            SpinBlade sb = it.next();
-            if (updateCount % BladePath.PATH_DRAW_SPEED == 0) {
-                sb.getBladePath().addDrawn();
+            if (System.nanoTime() - snakeExplodeTimestamp > 3_000_000_000L) {
+                isGameOver = true;
             }
-            sb.move();
-            PointDouble p = sb.getPos();
-            // remove from deque if spin-blade is out of bounds
-            if (sb.getBladePath().size() == 0) {
-                it.remove();
-                spawnBlade();
-                System.out.println("Removed!");
+        } else {
+            // TODO: unexpected behavior if game state update fps is not
+            //  divisible by snake speed
+            if (updateCount % snake.speed() == 0) {
+                if (queuedDirection != null) {
+                    snake.setDirection(queuedDirection);
+                    queuedDirection = null;
+                }
+                moveSnake();
             }
-        }
 
-        // TODO: consolidate into collisions method
-        for (SpinBlade sb : blades) {
-            if (sb.containsAnyPoint(snake.getPoints())) {
-                System.exit(1);
+            Iterator<SpinBlade> it = blades.iterator();
+            while (it.hasNext()) {
+                SpinBlade sb = it.next();
+                if (updateCount % BladePath.PATH_DRAW_SPEED == 0) {
+                    sb.getBladePath().addDrawn();
+                }
+                sb.move();
+                PointDouble p = sb.getPos();
+                // remove from deque if spin-blade is out of bounds
+                if (sb.getBladePath().size() == 0) {
+                    it.remove();
+                    spawnBlade();
+                    System.out.println("Removed!");
+                }
             }
-        }
 
-        spawnBlades();
-        System.out.println("Stage: " + stage);
-        System.out.println("Crumbs: " + crumbCount);
+            // TODO: consolidate into collisions method
+            for (SpinBlade sb : blades) {
+                if (sb.containsAnyPoint(snake.getPoints())) {
+                    makeSnakeExplode();
+                }
+            }
+            spawnBlades();
+        }
     }
 
     private Direction getRandomDir(Direction... options) {
@@ -303,10 +313,10 @@ public class GameState {
         return options[rand];
     }
 
-    private Point getRandomPoint() {
+    private PointInt getRandomPoint() {
         int randomX = (int) (width * Math.random());
         int randomY = (int) (height * Math.random());
-        return new Point(randomX, randomY);
+        return new PointInt(randomX, randomY);
     }
 
     public Direction getQueuedDirection() {
@@ -344,7 +354,82 @@ public class GameState {
         };
     }
 
-    private void hilbertCrumbPattern() {
-        MatrixUtil.hilbert(food, Food.CRUMB, 0, 0, 15);
+    public ParticleManager getSnakeParticles() {
+        return snakeParticles;
+    }
+
+    public boolean snakeIsExploding() {
+        return isExploding;
+    }
+
+    public void makeSnakeExplode() {
+        snakeExplodeTimestamp = System.nanoTime();
+        isExploding = true;
+        int pixelsPerTile =
+                PixelTile.TILE_WIDTH_PIXELS * PixelTile.TILE_WIDTH_PIXELS;
+        int pixelCount =
+                pixelsPerTile * snake.getLength();
+
+        snakeParticles = new ParticleManager(pixelCount,
+                GameLoop.PLAYABLE_AREA_WIDTH, GameLoop.PLAYABLE_AREA_HEIGHT,
+                0.01);
+
+        int j = 0;
+        for (SnakeCell sc : snake.getBody()) {
+            PointInt p = sc.getPos();
+
+            for (int i = 0; i < pixelsPerTile; i++) {
+                int id = j * pixelsPerTile + i;
+                snakeParticles.xPos[id] =
+                        p.x() * PixelTile.TILE_WIDTH_ACTUAL + (i % PixelTile.TILE_WIDTH_PIXELS) * PixelTile.PIXEL_WIDTH;
+                snakeParticles.yPos[id] =
+                        p.y() * PixelTile.TILE_WIDTH_ACTUAL + (i / PixelTile.TILE_WIDTH_PIXELS) * PixelTile.PIXEL_WIDTH;
+
+                double randomAngleRange = 70;
+                double angle =
+                        (sc.getDir().getAngle() - randomAngleRange / 2)
+                                + (int) (Math.random() * randomAngleRange);
+                double speed = 1.8 + 0.8 * Math.random() * snake.speed() * 0.3;
+                snakeParticles.setVelocity(id, angle, speed);
+            }
+            j++;
+        }
+    }
+
+    public boolean isGameOver() {
+        return isGameOver;
+    }
+
+    private void mazePattern() {
+        int mazeSize = (width + 1) / 2;
+        Maze maze = new Maze(mazeSize);
+        Maze.MazeCell[][] cells = maze.getMaze();
+
+        for (int i = 1; i < width; i += 2) {
+            for (int j = 1; j < height; j += 2) {
+                PointInt p = new PointInt(j, i);
+                placeFood(p, Food.CRUMB);
+            }
+        }
+        for (int i = 1; i < cells.length - 1; i++) {
+            for (int j = 1; j < cells.length - 1; j++) {
+                Maze.MazeCell cell = cells[i][j];
+                PointInt p = new PointInt(2 * (j - 1), 2 * (i - 1));
+                System.out.println(p);
+
+                if (cell.north && p.y() > 0) {
+                    placeFood(p.go(Direction.UP), Food.CRUMB);
+                }
+                if (cell.east && p.x() < width - 1) {
+                    placeFood(p.go(Direction.RIGHT), Food.CRUMB);
+                }
+                if (cell.south && p.y() < height - 1) {
+                    placeFood(p.go(Direction.DOWN), Food.CRUMB);
+                }
+                if (cell.west && p.x() > 0) {
+                    placeFood(p.go(Direction.LEFT), Food.CRUMB);
+                }
+            }
+        }
     }
 }

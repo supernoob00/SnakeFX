@@ -1,16 +1,18 @@
 package com.somerdin.snake;
 
+import com.somerdin.snake.Point.PointInt;
+
 import java.util.ArrayDeque;
 import java.util.Deque;
 
 public class BladePath {
     public static final int PATH_DRAW_SPEED = 5;
 
-    private Point start;
+    private PointInt start;
     private Deque<Direction> path = new ArrayDeque<>();
     private int drawn;
 
-    public BladePath(Direction initialDirection, Point start) {
+    public BladePath(Direction initialDirection, PointInt start) {
         for (int i = 0; i < 5; i++) {
             path.addLast(initialDirection);
         }
@@ -18,8 +20,7 @@ public class BladePath {
 
         int turnsLeft = 3;
         int movesSinceLastTurn = 5;
-        Point current = start.goFollowPath(path);
-        System.out.println("Here:" + current);
+        PointInt current = start.goFollowPath(path);
 
         while (current.inBounds(GameState.WIDTH, GameState.HEIGHT)) {
             Direction lastDir = path.getLast();
@@ -28,13 +29,10 @@ public class BladePath {
             // path continues straight if there was a turn too recently,
             // or if RNG says so
             if (movesSinceLastTurn < 4 || turnsLeft == 0) {
-                System.out.println(movesSinceLastTurn);
-                System.out.println(turnsLeft);
                 path.addLast(lastDir);
                 movesSinceLastTurn++;
             } else if ((randDirs = possibleRandomDirs(initialDirection,
                     lastDir)).length == 3) {
-                System.out.println(2);
                 // probabilities: 0.9 straight, 0.05 left, 0.05 right
                 double rand = Math.random();
                 if (rand < 0.9) {
@@ -50,7 +48,6 @@ public class BladePath {
                     turnsLeft--;
                 }
             } else {
-                System.out.println(3);
                 // probabilities: 0.9 straight, 0.1 other valid direction
                 double rand = Math.random();
                 if (rand < 0.9) {
@@ -62,13 +59,12 @@ public class BladePath {
                     turnsLeft--;
                 }
             }
-            System.out.println(path.getLast());
             current = current.go(path.getLast());
         }
         System.out.println("Created size: " + path.size());
     }
 
-    public Point getStart() {
+    public PointInt getStart() {
         return start;
     }
 
