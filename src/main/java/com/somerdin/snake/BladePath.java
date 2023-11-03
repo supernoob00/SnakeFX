@@ -5,6 +5,7 @@ import com.somerdin.snake.Point.PointInt;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
+// TODO: make spawn points away from edges
 public class BladePath {
     public static final int PATH_DRAW_SPEED = 5;
 

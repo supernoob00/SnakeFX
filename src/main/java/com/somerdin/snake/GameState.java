@@ -22,9 +22,12 @@ public class GameState {
     private final Snake snake;
     // particle coordinates are actual coordinates on canvas
     private ParticleManager snakeParticles;
+    private boolean isStarted;
     private boolean isExploding;
     private boolean isGameOver;
     private final Deque<SpinBlade> blades = new ArrayDeque<>();
+    private final List<PointInt> crumbsToDraw = new ArrayList<>();
+    private boolean allInitialCrumbsDrawn;
     private long snakeExplodeTimestamp;
 
     private Direction queuedDirection;
@@ -40,11 +43,9 @@ public class GameState {
         this.width = width;
         this.height = height;
 
-        snake = new Snake(new SnakeCell(Direction.RIGHT, new PointInt(3, 3), false));
+        snake = new Snake(new SnakeCell(Direction.RIGHT, new PointInt(14, 12),
+                false));
         mazePattern();
-        placeFood(new PointInt(0, 0), Food.RED_APPLE);
-        // TODO: food should be at random location
-        spawnFruit();
         spawnBlade();
     }
 
@@ -267,7 +268,6 @@ public class GameState {
                 snakeParticles.updatePos(1);
                 System.out.println("moving");
             }
-
             if (System.nanoTime() - snakeExplodeTimestamp > 3_000_000_000L) {
                 isGameOver = true;
             }
@@ -305,6 +305,15 @@ public class GameState {
                 }
             }
             spawnBlades();
+            if (crumbsToDraw.size() > 0) {
+                for (int i = 0; i < 6; i++) {
+                    PointInt p = crumbsToDraw.remove(crumbsToDraw.size() - 1);
+                    placeFood(p, Food.CRUMB);
+                }
+            } else if (!allInitialCrumbsDrawn){
+                spawnFruit();
+                allInitialCrumbsDrawn = true;
+            }
         }
     }
 
@@ -325,18 +334,6 @@ public class GameState {
 
     public void setQueuedDirection(Direction direction) {
         this.queuedDirection = direction;
-    }
-
-    public long getTotalTime() {
-        return totalTime;
-    }
-
-    public long getTimeRemaining() {
-        return timeRemaining;
-    }
-
-    public void setTimeRemaining(long time) {
-        this.timeRemaining = time;
     }
 
     public long getScore() {
@@ -400,6 +397,18 @@ public class GameState {
         return isGameOver;
     }
 
+    public int getStage() {
+        return stage;
+    }
+
+    public boolean isStarted() {
+        return isStarted;
+    }
+
+    public void setStarted(boolean isStarted) {
+        this.isStarted = isStarted;
+    }
+
     private void mazePattern() {
         int mazeSize = (width + 1) / 2;
         Maze maze = new Maze(mazeSize);
@@ -408,28 +417,29 @@ public class GameState {
         for (int i = 1; i < width; i += 2) {
             for (int j = 1; j < height; j += 2) {
                 PointInt p = new PointInt(j, i);
-                placeFood(p, Food.CRUMB);
+                crumbsToDraw.add(p);
             }
         }
         for (int i = 1; i < cells.length - 1; i++) {
             for (int j = 1; j < cells.length - 1; j++) {
                 Maze.MazeCell cell = cells[i][j];
                 PointInt p = new PointInt(2 * (j - 1), 2 * (i - 1));
-                System.out.println(p);
 
                 if (cell.north && p.y() > 0) {
-                    placeFood(p.go(Direction.UP), Food.CRUMB);
+                    crumbsToDraw.add(p.go(Direction.UP));
                 }
                 if (cell.east && p.x() < width - 1) {
-                    placeFood(p.go(Direction.RIGHT), Food.CRUMB);
+                    crumbsToDraw.add(p.go(Direction.RIGHT));
                 }
                 if (cell.south && p.y() < height - 1) {
-                    placeFood(p.go(Direction.DOWN), Food.CRUMB);
+                    crumbsToDraw.add(p.go(Direction.DOWN));
                 }
                 if (cell.west && p.x() > 0) {
-                    placeFood(p.go(Direction.LEFT), Food.CRUMB);
+                    crumbsToDraw.add(p.go(Direction.LEFT));
                 }
             }
         }
+        Collections.shuffle(crumbsToDraw);
+        System.out.println(crumbsToDraw.size());
     }
 }

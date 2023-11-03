@@ -49,6 +49,8 @@ public class GameLoop {
     private int cellLength;
     private AnimationTimer timer;
 
+    private int prevStage = 0;
+
     private long startTime = 0;
     // the timestamp of the most recent animation cycle start
     private long prevTime = 0;
@@ -56,7 +58,9 @@ public class GameLoop {
     private long currentTime = 0;
     // number of game state updates which have occurred
     private long frameCount = 0;
+
     private long snakeExplodeTimestamp;
+    private long newStageTimestamp;
 
     public GameLoop(Canvas canvas) {
         gameState = new GameState(GameState.HEIGHT, GameState.WIDTH);
@@ -71,8 +75,7 @@ public class GameLoop {
             if (gameState.isGameOver()) {
                 restart();
                 start();
-            }
-            if (key.getCode() == KeyCode.SPACE
+            } else if (key.getCode() == KeyCode.SPACE
                     && gameState.getSnake().hasBoost()
                     && !gameState.getSnake().hasCooldown() ) {
                 gameState.getSnake().speedUp();
@@ -80,9 +83,14 @@ public class GameLoop {
             // arrow key pressed; only change snake direction if key pressed not
             // opposite to current head direction
             else if (keyEventMap.containsKey(key.getCode())) {
-                Direction direction = keyEventMap.get(key.getCode());
-                if (direction != gameState.getSnake().getHead().getDir().opposite()) {
-                    gameState.setQueuedDirection(direction);
+                if (!gameState.isStarted()) {
+                    gameState.setStarted(true);
+                    start();
+                } else {
+                    Direction direction = keyEventMap.get(key.getCode());
+                    if (direction != gameState.getSnake().getHead().getDir().opposite()) {
+                        gameState.setQueuedDirection(direction);
+                    }
                 }
             }
         });
@@ -112,21 +120,32 @@ public class GameLoop {
                     gameState.update(frameCount);
                     draw();
                     prevTime = time;
+
+                    if (prevStage != gameState.getStage()) {
+                        prevStage = gameState.getStage();
+                        newStageTimestamp = time;
+                    } else if (time - newStageTimestamp > 1_500_000_000L
+                            && time - newStageTimestamp < 3_000_000_000L) {
+                        System.out.println("HELLOOOOO");
+                        drawStageText();
+                    }
+                    System.out.println("Time: " + (time - newStageTimestamp));
                     frameCount++;
                     if (frameCount > 1000) {
                         frameCount = 0;
                     }
                 }
-                gameState.setTimeRemaining(gameState.getTotalTime() - (time - startTime));
             }
         };
-        drawWalls();
+        draw();
+        drawStartText();
     }
 
     public void start() {
         clear();
         draw();
         startTime = System.nanoTime();
+        drawStartText();
         timer.start();
     }
 
@@ -216,6 +235,28 @@ public class GameLoop {
                 i++;
             }
         }
+    }
+
+    private void drawStageText() {
+        Text gameText = new Text("STAGE " + gameState.getStage());
+        gameText.setFont(SnakeApplication.font(160));
+        g.setFill(Color.WHITE);
+        double titleX =
+                GAME_AREA_WIDTH / 2 - gameText.getLayoutBounds().getWidth() / 2;
+        double titleY = 300;
+        g.setFont(gameText.getFont());
+        g.fillText(gameText.getText(), titleX, titleY);
+    }
+
+    private void drawStartText() {
+        Text gameText = new Text("PRESS ANY ARROW KEY TO START");
+        gameText.setFont(SnakeApplication.font(36));
+        g.setFill(Color.WHITE);
+        double titleX =
+                GAME_AREA_WIDTH / 2 - gameText.getLayoutBounds().getWidth() / 2;
+        double titleY = 300;
+        g.setFont(gameText.getFont());
+        g.fillText(gameText.getText(), titleX, titleY);
     }
 
     private void drawFood() {
@@ -331,9 +372,6 @@ public class GameLoop {
         g.fillText("SCORE", GAME_AREA_WIDTH + 20, 50);
         g.fillText(String.valueOf(gameState.getScore()), GAME_AREA_WIDTH + 20, 80);
         g.fillText("MULTIPLIER", GAME_AREA_WIDTH + 20, 70);
-        g.fillText("TIME LEFT", GAME_AREA_WIDTH + 20, 120);
-        g.fillText(String.valueOf(gameState.getTimeRemaining()),
-                GAME_AREA_WIDTH + 20, 160);
         g.fillText(String.valueOf(gameState.getSnake().getBoostGauge()),
                 GAME_AREA_WIDTH + 20, 400);
         g.fillText(String.valueOf(gameState.getSnake().getSpeed()),

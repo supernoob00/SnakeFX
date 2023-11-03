@@ -46,7 +46,6 @@ public class TitleScreen {
             canvas.setFocusTraversable(false);
             timer.stop();
             GameLoop loop = new GameLoop(canvas);
-            loop.start();
         });
     }
 

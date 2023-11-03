@@ -6,7 +6,8 @@ public enum Food {
     YELLOW_APPLE(5_000_000_000L, 800),
     CHERRY(10_000_000_000L, 1000),
 
-    CRUMB(0, 10);
+    CRUMB(0, 10),
+    HIDDEN_CRUMB(0, 0);
 
     public static final Food[] FRUITS = new Food[] {
             RED_APPLE,
