@@ -72,9 +72,9 @@ public class GameState {
         this.food[p.y()][p.x()] = null;
         if (food == Food.CRUMB) {
             crumbCount--;
-        }
-        if (crumbCount == 0) {
-            stage++;
+            if (crumbCount == 0) {
+                stage++;
+            }
         }
     }
 
@@ -441,5 +441,14 @@ public class GameState {
         }
         Collections.shuffle(crumbsToDraw);
         System.out.println(crumbsToDraw.size());
+    }
+
+    // FOR TESTING
+    public void eatAllCrumbs() {
+        for (int i = 0; i < width; i++) {
+            for (int j = 0; j < height; j++) {
+                removeFood(new PointInt(i, j));
+            }
+        }
     }
 }

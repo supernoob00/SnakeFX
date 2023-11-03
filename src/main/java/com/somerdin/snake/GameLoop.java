@@ -92,6 +92,10 @@ public class GameLoop {
                         gameState.setQueuedDirection(direction);
                     }
                 }
+            } else if (key.getCode() == KeyCode.E) {
+                gameState.eatAllCrumbs();
+            } else if (key.getCode() == KeyCode.C) {
+                System.out.println(gameState.crumbCount);
             }
         });
 
@@ -126,10 +130,8 @@ public class GameLoop {
                         newStageTimestamp = time;
                     } else if (time - newStageTimestamp > 1_500_000_000L
                             && time - newStageTimestamp < 3_000_000_000L) {
-                        System.out.println("HELLOOOOO");
                         drawStageText();
                     }
-                    System.out.println("Time: " + (time - newStageTimestamp));
                     frameCount++;
                     if (frameCount > 1000) {
                         frameCount = 0;
@@ -239,13 +241,14 @@ public class GameLoop {
 
     private void drawStageText() {
         Text gameText = new Text("STAGE " + gameState.getStage());
-        gameText.setFont(SnakeApplication.font(160));
-        g.setFill(Color.WHITE);
+        gameText.setFont(SnakeApplication.font(80));
+        g.setStroke(Color.WHITE);
+        g.setLineWidth(2);
         double titleX =
                 GAME_AREA_WIDTH / 2 - gameText.getLayoutBounds().getWidth() / 2;
         double titleY = 300;
         g.setFont(gameText.getFont());
-        g.fillText(gameText.getText(), titleX, titleY);
+        g.strokeText(gameText.getText(), titleX, titleY);
     }
 
     private void drawStartText() {
