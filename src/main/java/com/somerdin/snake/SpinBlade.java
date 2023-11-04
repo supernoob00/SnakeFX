@@ -52,9 +52,6 @@ public class SpinBlade {
     }
 
     public void move() {
-        if (!isMoving()) {
-            return;
-        }
         double epsilon = 0.01;
         Direction next;
         if (Math.abs(distTraveled - 1) < epsilon) {
@@ -83,5 +80,9 @@ public class SpinBlade {
 
     public BladePath getBladePath() {
         return this.path;
+    }
+
+    public void speedUp() {
+        speed = SLOW_BLADE_SPEED * 3;
     }
 }

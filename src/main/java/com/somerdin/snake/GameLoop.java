@@ -27,8 +27,8 @@ public class GameLoop {
     public static final int GAME_INFO_WIDTH = 150;
     public static final int TOTAL_WIDTH = GAME_AREA_WIDTH + GAME_INFO_WIDTH;
 
-    public static final Color GAME_INFO_BACKGROUND = Color.LIGHTBLUE;
-    public static final Color GAME_INFO_TEXT_COLOR = Color.BLACK;
+    public static final Color GAME_INFO_BACKGROUND = Color.BLACK;
+    public static final Color GAME_INFO_TEXT_COLOR = Color.WHITE;
 
     public static final int DRAW_UPDATE_FPS = 60;
 
@@ -177,6 +177,9 @@ public class GameLoop {
             }
         } else {
             drawSnake();
+            if (gameState.bladesAreExploding()) {
+                drawExplodingBlades();
+            }
         }
         drawWalls();
         drawGameInfo();
@@ -217,19 +220,22 @@ public class GameLoop {
 
     private void drawPaths() {
         for (SpinBlade sb : gameState.getBlades()) {
-            PointInt current = sb.getBladePath().getStart();
-            Iterator<Direction> it = sb.getBladePath().getPath().iterator();
+            BladePath bladePath = sb.getBladePath();
+            PointInt current = bladePath.getStart();
+            Iterator<Direction> it = bladePath.getPath().iterator();
             int i = 0;
             boolean first = true;
-            while (it.hasNext() && i < sb.getBladePath().getDrawn()) {
+            while (it.hasNext() && i < bladePath.getDrawn()) {
                 Direction dir = it.next();
-                PixelTile.BLADE_PATH.setOrientation(dir);
+                PixelTile bladePathTile =
+                        PixelTile.getBladePathTileById(bladePath.getColorId());
+                bladePathTile.setOrientation(dir);
                 if (first && sb.isMoving()) {
-                    drawImage(PixelTile.BLADE_PATH,
+                    drawImage(bladePathTile,
                             sb.getPos().x() * cellLength,
                             sb.getPos().y() * cellLength);
                 } else {
-                    drawImage(PixelTile.BLADE_PATH, current.x() * cellLength,
+                    drawImage(bladePathTile, current.x() * cellLength,
                             current.y() * cellLength);
                 }
                 current = current.go(dir);
@@ -284,11 +290,21 @@ public class GameLoop {
 
     private void drawExplodingSnake() {
         ParticleManager pm = gameState.getSnakeParticles();
+        g.setFill(Color.GREEN);
+        drawParticles(pm);
+    }
+
+    private void drawExplodingBlades() {
+        ParticleManager pm = gameState.getBladeParticles();
+        g.setFill(Color.GREY);
+        drawParticles(pm);
+    }
+
+    private void drawParticles(ParticleManager pm) {
         double particleSize = PixelTile.PIXEL_WIDTH;
         for (int i = 0; i < pm.getCount(); i++) {
             double x = WALL_WIDTH + pm.xPos[i];
             double y = WALL_WIDTH + pm.yPos[i];
-            g.setFill(Color.GREEN);
             g.fillRect(x, y, particleSize, particleSize);
         }
     }
@@ -371,10 +387,10 @@ public class GameLoop {
         g.setFill(GAME_INFO_BACKGROUND);
         g.fillRect(GAME_AREA_WIDTH, 0, GAME_INFO_WIDTH, TOTAL_HEIGHT);
         g.setFill(GAME_INFO_TEXT_COLOR);
-        g.setFont(SnakeApplication.font(16));
-        g.fillText("SCORE", GAME_AREA_WIDTH + 20, 50);
-        g.fillText(String.valueOf(gameState.getScore()), GAME_AREA_WIDTH + 20, 80);
-        g.fillText("MULTIPLIER", GAME_AREA_WIDTH + 20, 70);
+        g.setFont(SnakeApplication.font(24));
+        g.fillText("SCORE x" + gameState.getScoreMultiplier(),
+                GAME_AREA_WIDTH + 20, 50);
+        g.fillText(String.valueOf(gameState.getScore()), GAME_AREA_WIDTH + 20, 100);
         g.fillText(String.valueOf(gameState.getSnake().getBoostGauge()),
                 GAME_AREA_WIDTH + 20, 400);
         g.fillText(String.valueOf(gameState.getSnake().getSpeed()),
@@ -384,7 +400,7 @@ public class GameLoop {
 
     private void drawBoostGauge(double x, double y) {
         g.setFill(GAME_INFO_TEXT_COLOR);
-        g.setLineWidth(5);
+        g.setLineWidth(2);
         double outerLength = 60;
         double outerWidth = 20;
         g.strokeRect(x, y, outerLength, outerWidth);
