@@ -13,9 +13,11 @@ public class Snake implements Mover {
     public static final int INITIAL_SIZE  = 4;
 
     private static final int MAX_COOLDOWN = 30;
-    private static final int COOLDOWN_DECREMENT = 2;
+    private static final int BOOST_GAUGE_USAGE = 2;
+    private static final int BOOST_GAUGE_RECHARGE = 2;
 
     private Deque<SnakeCell> cells;
+    private boolean isBoosting;
     private int speed;
     private int boostGauge = 100;
     private int boostCooldown = 0;
@@ -39,12 +41,16 @@ public class Snake implements Mover {
         return speed;
     }
 
-    public void speedUp() {
-        speed = Snake.FRAMES_TO_MOVE_BOOSTED;
+    private void speedUp() {
+        if (speed > FRAMES_TO_MOVE_BOOSTED) {
+            speed -= 5;
+        }
     }
 
-    public void slowDown() {
-        speed = Snake.FRAMES_TO_MOVE;
+    private void slowDown() {
+        if (speed < FRAMES_TO_MOVE) {
+            speed += 5;
+        }
     }
 
     public SnakeCell getHead() {
@@ -92,19 +98,35 @@ public class Snake implements Mover {
     }
 
     public void move() {
-         if (speed == FRAMES_TO_MOVE) {
+        // conditions if snake is currently moving at normal speed
+         if (!isBoosting) {
+             slowDown();
             if (boostCooldown > 0) {
                 boostCooldown--;
-            } else if (boostGauge <= 98){
-                boostGauge += COOLDOWN_DECREMENT;
+            } else if (boostGauge < 100){
+                // set boost gauge to 100 directly to avoid overflow
+                if (boostGauge > 100 - BOOST_GAUGE_RECHARGE) {
+                    boostGauge = 100;
+                } else {
+                    boostGauge += BOOST_GAUGE_RECHARGE;
+                }
             }
-        } else if (boostGauge == 0 && boostCooldown == 0) {
-            speed = FRAMES_TO_MOVE;
-            boostCooldown = MAX_COOLDOWN;
-        } else if (boostGauge >= COOLDOWN_DECREMENT
-                && speed == FRAMES_TO_MOVE_BOOSTED) {
-            boostGauge -= COOLDOWN_DECREMENT;
         }
+         // conditions if snake is currently boosted
+         else {
+             // snake just ran out of boost juice
+             if (boostGauge == 0) {
+                 if (boostGauge < 25) {
+                     resetCooldown();
+                 }
+                 slowDown();
+             }
+             // snake still has boost juice
+             else {
+                 speedUp();
+                 boostGauge -= BOOST_GAUGE_USAGE;
+             }
+         }
         cells.addFirst(new SnakeCell(getHead().getDir(), getHead().getNextPos(), false));
         cells.removeLast();
         getTail().setCorner(false);
@@ -132,14 +154,36 @@ public class Snake implements Mover {
     }
 
     public boolean hasBoost() {
-        return boostGauge >= COOLDOWN_DECREMENT;
+        return boostGauge >= BOOST_GAUGE_RECHARGE;
     }
 
     public boolean hasCooldown() {
         return boostCooldown > 0;
     }
 
+    public boolean isBoosting() {
+        return isBoosting;
+    }
+
+    public void setBoosting(boolean boost) {
+        isBoosting = boost;
+    }
+
+    public boolean canBoost() {
+        return boostGauge >= BOOST_GAUGE_USAGE && boostCooldown == 0;
+    }
+
+    public void resetLength() {
+        while (cells.size() > INITIAL_SIZE) {
+            cells.removeLast();
+        }
+    }
+
     public boolean isInvulnerable() {
         return invulnerable;
+    }
+
+    public void setInvulnerable(boolean invulnerable) {
+        this.invulnerable = invulnerable;
     }
 }

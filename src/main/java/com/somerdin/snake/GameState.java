@@ -9,6 +9,8 @@ public class GameState {
     public static final int WIDTH = 25;
     public static final int HEIGHT = 25;
 
+    private static final int INVUNERABLE_TIME = 150;
+
     PointInt TOP_LEFT = new PointInt(0, 0);
     PointInt BOTTOM_LEFT = new PointInt(0, HEIGHT - 1);
     PointInt BOTTOM_RIGHT = new PointInt(HEIGHT - 1, HEIGHT - 1);
@@ -32,8 +34,10 @@ public class GameState {
     private boolean isGameOver;
     private final Deque<SpinBlade> blades = new ArrayDeque<>();
     private final List<PointInt> crumbsToDraw = new ArrayList<>();
+
     private long snakeExplodeTimestamp;
     private long bladeExplodeTimestamp;
+    public long snakeInvulnerableTimestamp;
 
 
     private Direction queuedDirection;
@@ -41,6 +45,7 @@ public class GameState {
     private long timeRemaining = 30_000_000_000L;
     private long score = 0;
     private int stage = 1;
+    private long frames = 0;
 
     // TODO: decide what to do about out of bounds errors
     public GameState(int height, int width) {
@@ -65,9 +70,9 @@ public class GameState {
 
     public void placeFood(PointInt p, Food food) {
         Food existing = this.food[p.y()][p.x()];
-        if (existing == Food.CRUMB && food.isFruit()) {
+        if (existing != null && existing.isCrumb() && food.isFruit()) {
             crumbCount--;
-        } else if (food == Food.CRUMB && existing != Food.CRUMB) {
+        } else if (food.isCrumb() && (existing == null || !existing.isCrumb())) {
             crumbCount++;
         }
         this.food[p.y()][p.x()] = food;
@@ -76,7 +81,7 @@ public class GameState {
     private void removeFood(PointInt p) {
         Food food = this.food[p.y()][p.x()];
         this.food[p.y()][p.x()] = null;
-        if (food == Food.CRUMB) {
+        if (food.isCrumb()) {
             crumbCount--;
             if (crumbCount == 0) {
                 stage++;
@@ -144,6 +149,7 @@ public class GameState {
                 spawnFruit();
                 snake.grow();
                 health++;
+                Audio.EAT_FRUIT_SOUND.play();
             }
         }
     }
@@ -271,6 +277,7 @@ public class GameState {
     }
 
     public void update(long updateCount) {
+        frames = updateCount;
         System.out.println("SIZE " + blades.size());
         if (snakeIsExploding()) {
             if (snakeParticles.isMoving()) {
@@ -284,6 +291,9 @@ public class GameState {
                 int x = 1;
             }
         } else {
+            if (updateCount - snakeInvulnerableTimestamp > INVUNERABLE_TIME) {
+                snake.setInvulnerable(false);
+            }
             // TODO: unexpected behavior if game state update fps is not
             //  divisible by snake speed
             if (updateCount % snake.speed() == 0) {
@@ -329,7 +339,7 @@ public class GameState {
             if (crumbsToDraw.size() > 0) {
                 for (int i = 0; i < 6; i++) {
                     PointInt p = crumbsToDraw.remove(crumbsToDraw.size() - 1);
-                    placeFood(p, Food.CRUMB);
+                    placeFood(p, Food.getRandomCrumb());
                 }
                 if (crumbsToDraw.isEmpty()) {
                     spawnFruit();
@@ -449,6 +459,7 @@ public class GameState {
             }
             j++;
         }
+        Audio.DEATH_SOUND.play();
     }
 
     public boolean isGameOver() {
@@ -523,9 +534,16 @@ public class GameState {
     }
 
     private void takeDamage() {
-        health = Math.max(health - 4, 0);
-        if (health == 0) {
+        if (snake.isInvulnerable()) {
+            return;
+        }
+        snake.resetLength();
+        health -= 4;
+        if (health < 0) {
             makeSnakeExplode();
+        } else {
+            snake.setInvulnerable(true);
+            snakeInvulnerableTimestamp = frames;
         }
     }
 }

@@ -2,7 +2,6 @@ package com.somerdin.snake;
 
 import com.somerdin.snake.Point.PointInt;
 import javafx.animation.AnimationTimer;
-import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
@@ -31,6 +30,7 @@ public class GameLoop {
 
     public static final Color GAME_INFO_BACKGROUND = Color.BLACK;
     public static final Color GAME_INFO_TEXT_COLOR = Color.WHITE;
+    public static final Color CHECKERBOARD_LIGHT_COLOR = Color.web("#1919a6");
 
     public static final int DRAW_UPDATE_FPS = 60;
 
@@ -75,10 +75,8 @@ public class GameLoop {
             if (gameState.isGameOver()) {
                 restart();
                 start();
-            } else if (key.getCode() == KeyCode.SPACE
-                    && gameState.getSnake().hasBoost()
-                    && !gameState.getSnake().hasCooldown() ) {
-                gameState.getSnake().speedUp();
+            } else if (key.getCode() == KeyCode.SPACE && gameState.getSnake().canBoost()) {
+                gameState.getSnake().setBoosting(true);
             }
             // arrow key pressed; only change snake direction if key pressed not
             // opposite to current head direction
@@ -105,10 +103,7 @@ public class GameLoop {
                 return;
             }
             if (key.getCode() == KeyCode.SPACE) {
-                gameState.getSnake().slowDown();
-                if (gameState.getSnake().getBoostGauge() < 25) {
-                    gameState.getSnake().resetCooldown();
-                }
+                gameState.getSnake().setBoosting(false);
             }
         });
 
@@ -152,11 +147,22 @@ public class GameLoop {
         timer.start();
     }
 
+    // draw checkerboard pattern
     private void clear() {
         g.setFill(Color.BLACK);
         g.fillRect(WALL_WIDTH, WALL_WIDTH, PLAYABLE_AREA_WIDTH, PLAYABLE_AREA_HEIGHT);
         g.setFill(GAME_INFO_BACKGROUND);
         g.fillRect(GAME_AREA_WIDTH, 0, GAME_INFO_WIDTH, TOTAL_HEIGHT);
+
+        g.setFill(CHECKERBOARD_LIGHT_COLOR);
+        // draw checkerboard pattern
+        for (int i = 0; i < gameState.width * gameState.height; i++) {
+            int x = i % gameState.width * cellLength + WALL_WIDTH;
+            int y = i / gameState.height * cellLength + WALL_WIDTH;
+            if (i % 2 == 0) {
+                g.fillRect(x, y, cellLength, cellLength);
+            }
+        }
     }
 
     /**
@@ -178,7 +184,10 @@ public class GameLoop {
                 }
             }
         } else {
-            drawSnake();
+            if (!gameState.getSnake().isInvulnerable()
+                    || (frameCount - gameState.snakeInvulnerableTimestamp) % 10 < 5 ) {
+                drawSnake();
+            }
             if (gameState.bladesAreExploding()) {
                 drawExplodingBlades();
             }
@@ -192,7 +201,7 @@ public class GameLoop {
         boolean headDrawn = false;
         for (SnakeCell sc : snake.getBody()) {
             if (sc.isCorner()) {
-                drawImage(Sprite.SNAKE_BODY,
+                drawSpriteToGameBounds(Sprite.SNAKE_BODY,
                         sc.getPos().x() * cellLength,
                         sc.getPos().y() * cellLength);
             }
@@ -204,10 +213,10 @@ public class GameLoop {
                     frameCount % snake.speed() / (double) snake.speed());
             if (!headDrawn) {
                 Sprite.SNAKE_HEAD.setOrientation(sc.getDir());
-                drawImage(Sprite.SNAKE_HEAD, x, y);
+                drawSpriteToGameBounds(Sprite.SNAKE_HEAD, x, y);
                 headDrawn = true;
             } else {
-                drawImage(Sprite.SNAKE_BODY, x, y);
+                drawSpriteToGameBounds(Sprite.SNAKE_BODY, x, y);
             }
         }
     }
@@ -215,7 +224,7 @@ public class GameLoop {
     private void drawBlades() {
         for (SpinBlade sb : gameState.getBlades()) {
             Sprite.SHURIKEN.rotate(10);
-            drawImage(Sprite.SHURIKEN, sb.getPos().x() * cellLength,
+            drawSpriteToGameBounds(Sprite.SHURIKEN, sb.getPos().x() * cellLength,
                     sb.getPos().y() * cellLength);
         }
     }
@@ -233,11 +242,11 @@ public class GameLoop {
                         Sprite.getBladePathTileById(bladePath.getColorId());
                 bladePathTile.setOrientation(dir);
                 if (first && sb.isMoving()) {
-                    drawImage(bladePathTile,
+                    drawSpriteToGameBounds(bladePathTile,
                             sb.getPos().x() * cellLength,
                             sb.getPos().y() * cellLength);
                 } else {
-                    drawImage(bladePathTile, current.x() * cellLength,
+                    drawSpriteToGameBounds(bladePathTile, current.x() * cellLength,
                             current.y() * cellLength);
                 }
                 current = current.go(dir);
@@ -274,16 +283,16 @@ public class GameLoop {
         for (int y = 0; y < gameState.height; y++) {
             for (int x = 0; x < gameState.width; x++) {
                 Food food = gameState.getFood(new PointInt(x ,y));
-                if (food != null) {
                     int displayY = y * cellLength;
                     int displayX = x * cellLength;
-                    switch (food) {
-                        case RED_APPLE:
-                            drawImage(Sprite.APPLE, displayX, displayY);
-                            break;
-                        case CRUMB:
-                            drawImage(Sprite.CRUMB, displayX, displayY);
-                            break;
+                    if (food != null) {
+                        switch (food) {
+                            case RED_APPLE ->
+                                    drawSpriteToGameBounds(Sprite.APPLE, displayX, displayY);
+                            case CRUMB_1, CRUMB_2, CRUMB_3, CRUMB_4 ->
+                                    drawSpriteToGameBounds(Sprite.getCrumbById(food.getColorId()), displayX,
+                                            displayY);
+                            default -> drawSpriteToGameBounds(Sprite.EMPTY, displayX, displayY);
                     }
                 }
             }
@@ -311,13 +320,26 @@ public class GameLoop {
         }
     }
 
-    private void drawImage(Sprite toDraw, double x, double y) {
+    // TODO: this doesn't really work properly
+    private void drawSpriteToGameBounds(Sprite toDraw, double x, double y) {
         g.save(); // saves the current state on stack, including the current transform
-        rotate(g, toDraw.getRotate(), x + toDraw.width() / 2,
-                y + toDraw.height() / 2);
+        rotate(g, toDraw.getRotate(), x + toDraw.width() / 2D,
+                y + toDraw.height() / 2D);
         g.drawImage(toDraw.getImage(), toDraw.getX(),
                 toDraw.getY(), toDraw.width(),
                 toDraw.height(), x + WALL_WIDTH, y + WALL_WIDTH,
+                toDraw.width(),
+                toDraw.height());
+        g.restore();
+    }
+
+    private void drawWallSprite(Sprite toDraw, double x, double y) {
+        g.save(); // saves the current state on stack, including the current transform
+        rotate(g, toDraw.getRotate(), x - toDraw.width() / 2D,
+                y - toDraw.height() / 2D);
+        g.drawImage(toDraw.getImage(), toDraw.getX(),
+                toDraw.getY(), toDraw.width(),
+                toDraw.height(), x, y,
                 toDraw.width(),
                 toDraw.height());
         g.restore();
@@ -370,16 +392,52 @@ public class GameLoop {
     private void drawWalls() {
         for (int i = 0; i <= gameState.width + 1; i++) {
             for (int j = 0; j <= gameState.height + 1; j++) {
-                if (i == 0 || i == gameState.width + 1
-                        || j == 0 || j == gameState.height + 1) {
-                    int x = i * cellLength;
-                    int y = j * cellLength;
-                    Rectangle2D viewport = Sprite.WALL_IMG.getViewport();
-                    g.drawImage(Sprite.WALL_IMG.getImage(), viewport.getMinX(),
-                            viewport.getMinY(), viewport.getWidth(),
-                            viewport.getHeight(), x, y,
-                            viewport.getWidth(),
-                            viewport.getHeight());
+                int x = j * cellLength;
+                int y = i * cellLength;
+                Sprite wallSprite;
+                if (i == 0 || j == 0
+                        || i == gameState.width + 1 || j == gameState.width + 1) {
+                    // top left
+                    if (i == 0 && j == 0) {
+                        wallSprite = Sprite.WALL_CORNER;
+                        wallSprite.setRotateAngle(180);
+                    }
+                    // top right
+                    else if (j == gameState.width + 1 && i == 0) {
+                        wallSprite = Sprite.WALL_CORNER;
+                        wallSprite.setRotateAngle(-90);
+                    }
+                    // bottom right
+                    else if (i == gameState.width + 1 && j == gameState.width + 1) {
+                        wallSprite = Sprite.WALL_CORNER;
+                        wallSprite.setRotateAngle(0);
+                    }
+                    // bottom left
+                    else if (i == gameState.width + 1 && j == 0) {
+                        wallSprite = Sprite.WALL_CORNER;
+                        wallSprite.setRotateAngle(90);
+                    }
+                    // top
+                    else if (i == 0) {
+                        wallSprite = Sprite.WALL;
+                        wallSprite.setRotateAngle(-90);
+                    }
+                    // right
+                    else if (j == gameState.width + 1) {
+                        wallSprite = Sprite.WALL;
+                        wallSprite.setRotateAngle(0);
+                    }
+                    // bottom
+                    else if (i == gameState.width + 1) {
+                        wallSprite = Sprite.WALL;
+                        wallSprite.setRotateAngle(90);
+                    }
+                    // left
+                    else {
+                        wallSprite = Sprite.WALL;
+                        wallSprite.setRotateAngle(180);
+                    }
+                    drawWallSprite(wallSprite, x, y);
                 }
             }
         }
@@ -417,12 +475,15 @@ public class GameLoop {
     }
 
     private void drawHealth() {
+        if (gameState.getHealth() < 0) {
+            return;
+        }
         int fullHeartCount = gameState.getHealth() / 4;
         double x = GAME_AREA_WIDTH - 5;
         double y = 100;
 
         for (int i = 0; i < fullHeartCount; i++) {
-            drawImage(Sprite.FULL_HEART, x, y);
+            drawSpriteToGameBounds(Sprite.FULL_HEART, x, y);
             if ((i + 1) % 4 == 0) {
                 x = GAME_AREA_WIDTH - 5;
                 y += 30;
@@ -432,9 +493,9 @@ public class GameLoop {
         }
 
         switch (gameState.getHealth() % 4) {
-            case 1 -> drawImage(Sprite.QUARTER_HEART, x, y);
-            case 2 -> drawImage(Sprite.HALF_HEART, x, y);
-            case 3 -> drawImage(Sprite.THREE_QUARTERS_HEART, x, y);
+            case 1 -> drawSpriteToGameBounds(Sprite.QUARTER_HEART, x, y);
+            case 2 -> drawSpriteToGameBounds(Sprite.HALF_HEART, x, y);
+            case 3 -> drawSpriteToGameBounds(Sprite.THREE_QUARTERS_HEART, x, y);
             default -> {
                 return;
             }
