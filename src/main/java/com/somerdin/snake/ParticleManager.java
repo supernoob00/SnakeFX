@@ -35,12 +35,12 @@ public class ParticleManager {
                 yPos[i] = 0;
                 ySpeed[i] = -ySpeed[i];
             }
-            if (xPos[i] > rightBounds - PixelTile.PIXEL_WIDTH) {
-                xPos[i] = rightBounds - PixelTile.PIXEL_WIDTH;
+            if (xPos[i] > rightBounds - Sprite.PIXEL_WIDTH) {
+                xPos[i] = rightBounds - Sprite.PIXEL_WIDTH;
                 xSpeed[i] = -xSpeed[i];
             }
-            if (yPos[i] > bottomBounds - PixelTile.PIXEL_WIDTH) {
-                yPos[i] = bottomBounds - PixelTile.PIXEL_WIDTH;
+            if (yPos[i] > bottomBounds - Sprite.PIXEL_WIDTH) {
+                yPos[i] = bottomBounds - Sprite.PIXEL_WIDTH;
                 ySpeed[i] = -ySpeed[i];
             }
             if (xSpeed[i] != 0 || ySpeed[i] != 0) {

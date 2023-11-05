@@ -24,6 +24,8 @@ public class GameState {
     private ParticleManager snakeParticles;
     private ParticleManager bladeParticles;
 
+    private int health = 0;
+
     private boolean isStarted;
     private boolean isExploding;
     private boolean bladesExploding;
@@ -32,6 +34,7 @@ public class GameState {
     private final List<PointInt> crumbsToDraw = new ArrayList<>();
     private long snakeExplodeTimestamp;
     private long bladeExplodeTimestamp;
+
 
     private Direction queuedDirection;
     private long totalTime = 30_000_000_000L;
@@ -48,8 +51,8 @@ public class GameState {
 
         snake = new Snake(new SnakeCell(Direction.RIGHT, new PointInt(14, 12),
                 false));
-        mazePattern();
-        spawnBlade();
+        setInitialCrumbPattern();
+        // spawnBlade();
     }
 
     public Snake getSnake() {
@@ -78,7 +81,7 @@ public class GameState {
             if (crumbCount == 0) {
                 stage++;
                 makeBladesExplode();
-                mazePattern();
+                setInitialCrumbPattern();
             }
         }
     }
@@ -129,18 +132,18 @@ public class GameState {
         snake.move();
 
         if (snake.headOnBody()) {
-            makeSnakeExplode();
+            takeDamage();
         }
 
         Food foodAtHead = getFood(snake.getHead().getPos());
         if (foodAtHead != null) {
             removeFood(snake.getHead().getPos());
             totalTime += foodAtHead.getTimeAdd();
-            score += foodAtHead.getScore();
-            System.out.println(score);
+            score += foodAtHead.getScore() * getScoreMultiplier();
             if (foodAtHead.isFruit()) {
                 spawnFruit();
                 snake.grow();
+                health++;
             }
         }
     }
@@ -263,18 +266,22 @@ public class GameState {
             default -> 15;
         };
         while (blades.size() < bladeCount) {
-            spawnBlade();
+            // spawnBlade();
         }
     }
 
     public void update(long updateCount) {
+        System.out.println("SIZE " + blades.size());
         if (snakeIsExploding()) {
             if (snakeParticles.isMoving()) {
                 snakeParticles.updatePos(1);
                 System.out.println("moving");
             }
             if (System.nanoTime() - snakeExplodeTimestamp > 3_000_000_000L) {
-                isGameOver = true;
+                 isGameOver = true;
+            }
+            if (updateCount % 1000 == 0) {
+                int x = 1;
             }
         } else {
             // TODO: unexpected behavior if game state update fps is not
@@ -306,7 +313,7 @@ public class GameState {
                 // remove from deque if spin-blade is out of bounds
                 if (sb.getBladePath().size() == 0) {
                     it.remove();
-                    spawnBlade();
+                    // spawnBlade();
                     System.out.println("Removed!");
                 }
             }
@@ -314,10 +321,10 @@ public class GameState {
             // TODO: consolidate into collisions method
             for (SpinBlade sb : blades) {
                 if (sb.containsAnyPoint(snake.getPoints())) {
-                    makeSnakeExplode();
+                    takeDamage();
                 }
             }
-            spawnBlades();
+            // spawnBlades();
 
             if (crumbsToDraw.size() > 0) {
                 for (int i = 0; i < 6; i++) {
@@ -355,7 +362,7 @@ public class GameState {
     }
 
     public double getScoreMultiplier() {
-        return switch (stage) {
+        double stageMultiplier = switch (stage) {
             case 1 -> 1;
             case 2 -> 1.2;
             case 3 -> 1.5;
@@ -363,6 +370,8 @@ public class GameState {
             case 5 -> 3;
             default -> 5;
         };
+        double snakeMultiplier = snake.getLength() / 3 * stageMultiplier;
+        return stageMultiplier * snakeMultiplier;
     }
 
     public ParticleManager getSnakeParticles() {
@@ -377,7 +386,7 @@ public class GameState {
         bladesExploding = true;
         bladeExplodeTimestamp = System.nanoTime();
         int pixelsPerTile =
-                PixelTile.TILE_WIDTH_PIXELS * PixelTile.TILE_WIDTH_PIXELS;
+                Sprite.TILE_WIDTH_PIXELS * Sprite.TILE_WIDTH_PIXELS;
         int pixelCount =
                 pixelsPerTile * blades.size();
 
@@ -392,9 +401,9 @@ public class GameState {
             for (int i = 0; i < pixelsPerTile; i++) {
                 int id = j * pixelsPerTile + i;
                 bladeParticles.xPos[id] =
-                        p.x() * PixelTile.TILE_WIDTH_ACTUAL + (i % PixelTile.TILE_WIDTH_PIXELS) * PixelTile.PIXEL_WIDTH;
+                        p.x() * Sprite.TILE_WIDTH_ACTUAL + (i % Sprite.TILE_WIDTH_PIXELS) * Sprite.PIXEL_WIDTH;
                 bladeParticles.yPos[id] =
-                        p.y() * PixelTile.TILE_WIDTH_ACTUAL + (i / PixelTile.TILE_WIDTH_PIXELS) * PixelTile.PIXEL_WIDTH;
+                        p.y() * Sprite.TILE_WIDTH_ACTUAL + (i / Sprite.TILE_WIDTH_PIXELS) * Sprite.PIXEL_WIDTH;
 
                 double randomAngleRange = 70;
                 double angle =
@@ -412,7 +421,7 @@ public class GameState {
         snakeExplodeTimestamp = System.nanoTime();
         isExploding = true;
         int pixelsPerTile =
-                PixelTile.TILE_WIDTH_PIXELS * PixelTile.TILE_WIDTH_PIXELS;
+                Sprite.TILE_WIDTH_PIXELS * Sprite.TILE_WIDTH_PIXELS;
         int pixelCount =
                 pixelsPerTile * snake.getLength();
 
@@ -427,9 +436,9 @@ public class GameState {
             for (int i = 0; i < pixelsPerTile; i++) {
                 int id = j * pixelsPerTile + i;
                 snakeParticles.xPos[id] =
-                        p.x() * PixelTile.TILE_WIDTH_ACTUAL + (i % PixelTile.TILE_WIDTH_PIXELS) * PixelTile.PIXEL_WIDTH;
+                        p.x() * Sprite.TILE_WIDTH_ACTUAL + (i % Sprite.TILE_WIDTH_PIXELS) * Sprite.PIXEL_WIDTH;
                 snakeParticles.yPos[id] =
-                        p.y() * PixelTile.TILE_WIDTH_ACTUAL + (i / PixelTile.TILE_WIDTH_PIXELS) * PixelTile.PIXEL_WIDTH;
+                        p.y() * Sprite.TILE_WIDTH_ACTUAL + (i / Sprite.TILE_WIDTH_PIXELS) * Sprite.PIXEL_WIDTH;
 
                 double randomAngleRange = 70;
                 double angle =
@@ -458,7 +467,7 @@ public class GameState {
         this.isStarted = isStarted;
     }
 
-    private void mazePattern() {
+    private void setInitialCrumbPattern() {
         int mazeSize = (width + 1) / 2;
         Maze maze = new Maze(mazeSize);
         Maze.MazeCell[][] cells = maze.getMaze();
@@ -493,7 +502,7 @@ public class GameState {
     }
 
     // FOR TESTING
-    public void eatAllCrumbs() {
+    public void removeAllCrumbs() {
         for (int i = 0; i < width; i++) {
             for (int j = 0; j < height; j++) {
                 removeFood(new PointInt(i, j));
@@ -507,5 +516,16 @@ public class GameState {
 
     public ParticleManager getBladeParticles() {
         return bladeParticles;
+    }
+
+    public int getHealth() {
+        return health;
+    }
+
+    private void takeDamage() {
+        health = Math.max(health - 4, 0);
+        if (health == 0) {
+            makeSnakeExplode();
+        }
     }
 }

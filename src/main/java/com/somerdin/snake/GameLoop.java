@@ -6,9 +6,11 @@ import javafx.geometry.Rectangle2D;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
+import javafx.scene.media.MediaPlayer;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
 import javafx.scene.transform.Rotate;
+import javafx.util.Duration;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -17,10 +19,10 @@ import java.util.Map;
  * Calls game state update methods and handles canvas drawing and animation.
  */
 public class GameLoop {
-    public static final int WALL_WIDTH = PixelTile.TILE_WIDTH_ACTUAL;
-    public static final int PLAYABLE_AREA_WIDTH = GameState.WIDTH * PixelTile.TILE_WIDTH_ACTUAL;
+    public static final int WALL_WIDTH = Sprite.TILE_WIDTH_ACTUAL;
+    public static final int PLAYABLE_AREA_WIDTH = GameState.WIDTH * Sprite.TILE_WIDTH_ACTUAL;
     public static final int PLAYABLE_AREA_HEIGHT =
-            GameState.HEIGHT * PixelTile.TILE_WIDTH_ACTUAL;
+            GameState.HEIGHT * Sprite.TILE_WIDTH_ACTUAL;
     public static final int GAME_AREA_WIDTH = PLAYABLE_AREA_WIDTH + 2 * WALL_WIDTH;
     public static final int TOTAL_HEIGHT =
             PLAYABLE_AREA_HEIGHT + 2 * WALL_WIDTH;
@@ -43,6 +45,7 @@ public class GameLoop {
             KeyCode.DOWN, Direction.DOWN
     );
 
+    private MediaPlayer mediaPlayer = new MediaPlayer(Audio.MUSIC);
     private GameState gameState;
     private Canvas canvas;
     private GraphicsContext g;
@@ -64,11 +67,8 @@ public class GameLoop {
 
     public GameLoop(Canvas canvas) {
         gameState = new GameState(GameState.HEIGHT, GameState.WIDTH);
-        this.canvas = new Canvas(TOTAL_WIDTH, TOTAL_HEIGHT);
+        this.canvas = canvas;
         startTime = System.nanoTime();
-
-        // allows the canvas to register key events
-        canvas.setFocusTraversable(true);
 
         // key press listeners on canvas
         canvas.setOnKeyPressed(key -> {
@@ -93,7 +93,7 @@ public class GameLoop {
                     }
                 }
             } else if (key.getCode() == KeyCode.E) {
-                gameState.eatAllCrumbs();
+                gameState.removeAllCrumbs();
             } else if (key.getCode() == KeyCode.C) {
                 System.out.println(gameState.crumbCount);
             }
@@ -117,33 +117,34 @@ public class GameLoop {
 
         timer = new AnimationTimer() {
             @Override
+            // all game animations update at 60 FPS
             public void handle(long time) {
                 currentTime = time;
-                // all game animations update at 60 FPS
-                if (time - prevTime > 0.99e9 / DRAW_UPDATE_FPS) {
-                    gameState.update(frameCount);
-                    draw();
-                    prevTime = time;
+                System.out.println(time);
+                gameState.update(frameCount);
+                draw();
+                prevTime = time;
 
-                    if (prevStage != gameState.getStage()) {
-                        prevStage = gameState.getStage();
-                        newStageTimestamp = time;
-                    } else if (time - newStageTimestamp > 1_500_000_000L
-                            && time - newStageTimestamp < 3_000_000_000L) {
-                        drawStageText();
-                    }
-                    frameCount++;
-                    if (frameCount > 1000) {
-                        frameCount = 0;
-                    }
+                if (prevStage != gameState.getStage()) {
+                    prevStage = gameState.getStage();
+                    newStageTimestamp = time;
+                } else if (time - newStageTimestamp > 1_500_000_000L
+                        && time - newStageTimestamp < 3_000_000_000L) {
+                    drawStageText();
                 }
+                frameCount++;
             }
         };
         draw();
         drawStartText();
+        mediaPlayer.setOnEndOfMedia(() -> {
+            mediaPlayer.seek(Duration.ZERO);
+            mediaPlayer.play();
+        });
     }
 
     public void start() {
+        mediaPlayer.play();
         clear();
         draw();
         startTime = System.nanoTime();
@@ -168,6 +169,7 @@ public class GameLoop {
         drawFood();
         drawBlades();
         if (gameState.snakeIsExploding()) {
+            mediaPlayer.stop();
             drawExplodingSnake();
             if (gameState.isGameOver()) {
                 drawGameOver();
@@ -190,7 +192,7 @@ public class GameLoop {
         boolean headDrawn = false;
         for (SnakeCell sc : snake.getBody()) {
             if (sc.isCorner()) {
-                drawImage(PixelTile.SNAKE_BODY,
+                drawImage(Sprite.SNAKE_BODY,
                         sc.getPos().x() * cellLength,
                         sc.getPos().y() * cellLength);
             }
@@ -201,19 +203,19 @@ public class GameLoop {
                     sc.getNextPos().y() * cellLength,
                     frameCount % snake.speed() / (double) snake.speed());
             if (!headDrawn) {
-                PixelTile.SNAKE_HEAD.setOrientation(sc.getDir());
-                drawImage(PixelTile.SNAKE_HEAD, x, y);
+                Sprite.SNAKE_HEAD.setOrientation(sc.getDir());
+                drawImage(Sprite.SNAKE_HEAD, x, y);
                 headDrawn = true;
             } else {
-                drawImage(PixelTile.SNAKE_BODY, x, y);
+                drawImage(Sprite.SNAKE_BODY, x, y);
             }
         }
     }
 
     private void drawBlades() {
         for (SpinBlade sb : gameState.getBlades()) {
-            PixelTile.SHURIKEN.rotate(10);
-            drawImage(PixelTile.SHURIKEN, sb.getPos().x() * cellLength,
+            Sprite.SHURIKEN.rotate(10);
+            drawImage(Sprite.SHURIKEN, sb.getPos().x() * cellLength,
                     sb.getPos().y() * cellLength);
         }
     }
@@ -227,8 +229,8 @@ public class GameLoop {
             boolean first = true;
             while (it.hasNext() && i < bladePath.getDrawn()) {
                 Direction dir = it.next();
-                PixelTile bladePathTile =
-                        PixelTile.getBladePathTileById(bladePath.getColorId());
+                Sprite bladePathTile =
+                        Sprite.getBladePathTileById(bladePath.getColorId());
                 bladePathTile.setOrientation(dir);
                 if (first && sb.isMoving()) {
                     drawImage(bladePathTile,
@@ -247,7 +249,7 @@ public class GameLoop {
 
     private void drawStageText() {
         Text gameText = new Text("STAGE " + gameState.getStage());
-        gameText.setFont(SnakeApplication.font(80));
+        gameText.setFont(Font.ATARI_80);
         g.setStroke(Color.WHITE);
         g.setLineWidth(2);
         double titleX =
@@ -259,7 +261,7 @@ public class GameLoop {
 
     private void drawStartText() {
         Text gameText = new Text("PRESS ANY ARROW KEY TO START");
-        gameText.setFont(SnakeApplication.font(36));
+        gameText.setFont(Font.ATARI_36);
         g.setFill(Color.WHITE);
         double titleX =
                 GAME_AREA_WIDTH / 2 - gameText.getLayoutBounds().getWidth() / 2;
@@ -277,10 +279,10 @@ public class GameLoop {
                     int displayX = x * cellLength;
                     switch (food) {
                         case RED_APPLE:
-                            drawImage(PixelTile.APPLE, displayX, displayY);
+                            drawImage(Sprite.APPLE, displayX, displayY);
                             break;
                         case CRUMB:
-                            drawImage(PixelTile.CRUMB, displayX, displayY);
+                            drawImage(Sprite.CRUMB, displayX, displayY);
                             break;
                     }
                 }
@@ -301,7 +303,7 @@ public class GameLoop {
     }
 
     private void drawParticles(ParticleManager pm) {
-        double particleSize = PixelTile.PIXEL_WIDTH;
+        double particleSize = Sprite.PIXEL_WIDTH;
         for (int i = 0; i < pm.getCount(); i++) {
             double x = WALL_WIDTH + pm.xPos[i];
             double y = WALL_WIDTH + pm.yPos[i];
@@ -309,7 +311,7 @@ public class GameLoop {
         }
     }
 
-    private void drawImage(PixelTile toDraw, double x, double y) {
+    private void drawImage(Sprite toDraw, double x, double y) {
         g.save(); // saves the current state on stack, including the current transform
         rotate(g, toDraw.getRotate(), x + toDraw.width() / 2,
                 y + toDraw.height() / 2);
@@ -324,8 +326,8 @@ public class GameLoop {
     private void drawGameOver() {
         Text gameText = new Text("GAME");
         Text overText = new Text("OVER");
-        gameText.setFont(SnakeApplication.font(160));
-        overText.setFont(SnakeApplication.font(160));
+        gameText.setFont(Font.ATARI_160);
+        overText.setFont(Font.ATARI_160);
         g.setFill(Color.WHITE);
         double titleX =
                 GAME_AREA_WIDTH / 2 - gameText.getLayoutBounds().getWidth() / 2;
@@ -340,7 +342,7 @@ public class GameLoop {
 
     private void drawContinueText() {
         Text startText = new Text("PRESS ANY KEY TO CONTINUE");
-        startText.setFont(SnakeApplication.font(36));
+        startText.setFont(Font.ATARI_36);
         double startTextX =
                 GAME_AREA_WIDTH / 2 - startText.getLayoutBounds().getWidth() / 2;
         double startTextY = 470;
@@ -372,8 +374,8 @@ public class GameLoop {
                         || j == 0 || j == gameState.height + 1) {
                     int x = i * cellLength;
                     int y = j * cellLength;
-                    Rectangle2D viewport = PixelTile.WALL_IMG.getViewport();
-                    g.drawImage(PixelTile.WALL_IMG.getImage(), viewport.getMinX(),
+                    Rectangle2D viewport = Sprite.WALL_IMG.getViewport();
+                    g.drawImage(Sprite.WALL_IMG.getImage(), viewport.getMinX(),
                             viewport.getMinY(), viewport.getWidth(),
                             viewport.getHeight(), x, y,
                             viewport.getWidth(),
@@ -387,15 +389,14 @@ public class GameLoop {
         g.setFill(GAME_INFO_BACKGROUND);
         g.fillRect(GAME_AREA_WIDTH, 0, GAME_INFO_WIDTH, TOTAL_HEIGHT);
         g.setFill(GAME_INFO_TEXT_COLOR);
-        g.setFont(SnakeApplication.font(24));
+        g.setFont(Font.ATARI_24);
         g.fillText("SCORE x" + gameState.getScoreMultiplier(),
                 GAME_AREA_WIDTH + 20, 50);
         g.fillText(String.valueOf(gameState.getScore()), GAME_AREA_WIDTH + 20, 100);
         g.fillText(String.valueOf(gameState.getSnake().getBoostGauge()),
                 GAME_AREA_WIDTH + 20, 400);
-        g.fillText(String.valueOf(gameState.getSnake().getSpeed()),
-                GAME_AREA_WIDTH + 20, 550);
         drawBoostGauge(GAME_AREA_WIDTH + 20, 500);
+        drawHealth();
     }
 
     private void drawBoostGauge(double x, double y) {
@@ -415,6 +416,31 @@ public class GameLoop {
                 innerWidth);
     }
 
+    private void drawHealth() {
+        int fullHeartCount = gameState.getHealth() / 4;
+        double x = GAME_AREA_WIDTH - 5;
+        double y = 100;
+
+        for (int i = 0; i < fullHeartCount; i++) {
+            drawImage(Sprite.FULL_HEART, x, y);
+            if ((i + 1) % 4 == 0) {
+                x = GAME_AREA_WIDTH - 5;
+                y += 30;
+            } else {
+                x += 30;
+            }
+        }
+
+        switch (gameState.getHealth() % 4) {
+            case 1 -> drawImage(Sprite.QUARTER_HEART, x, y);
+            case 2 -> drawImage(Sprite.HALF_HEART, x, y);
+            case 3 -> drawImage(Sprite.THREE_QUARTERS_HEART, x, y);
+            default -> {
+                return;
+            }
+        };
+    }
+
     private void restart() {
         timer.stop();
         gameState = new GameState(GameState.HEIGHT, GameState.WIDTH);
@@ -425,6 +451,5 @@ public class GameLoop {
         currentTime = 0;
         frameCount = 0;
         snakeExplodeTimestamp = 0;
-        System.gc();
     }
 }

@@ -8,8 +8,8 @@ import java.util.Iterator;
 import java.util.stream.Collectors;
 
 public class Snake implements Mover {
-    public static final int FRAMES_TO_MOVE = 5;
-    public static final int FRAMES_TO_MOVE_BOOSTED = 2;
+    public static final int FRAMES_TO_MOVE = 8;
+    public static final int FRAMES_TO_MOVE_BOOSTED = 3;
     public static final int INITIAL_SIZE  = 4;
 
     private static final int MAX_COOLDOWN = 30;

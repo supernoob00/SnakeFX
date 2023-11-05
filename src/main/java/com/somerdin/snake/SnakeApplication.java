@@ -10,11 +10,6 @@ import javafx.stage.Stage;
 import java.io.IOException;
 
 public class SnakeApplication extends Application {
-    public static Font font(double size) {
-        return Font.loadFont(SnakeApplication.class.getResourceAsStream(
-                "/AtariGames.ttf"), size);
-    }
-
     @Override
     public void start(Stage stage) throws IOException {
         Canvas canvas = new Canvas(GameLoop.TOTAL_WIDTH, GameLoop.TOTAL_HEIGHT);

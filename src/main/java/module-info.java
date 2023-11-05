@@ -1,6 +1,7 @@
 module com.somerdin.snake {
     requires javafx.controls;
     requires javafx.fxml;
+    requires javafx.media;
 
 
     opens com.somerdin.snake to javafx.fxml;
