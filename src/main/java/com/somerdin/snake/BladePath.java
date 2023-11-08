@@ -13,6 +13,7 @@ public class BladePath {
     private Deque<Direction> path = new ArrayDeque<>();
     private int drawn;
     private int colorId;
+    private int initialSize = 0;
 
     public BladePath(Direction initialDirection, PointInt start) {
         for (int i = 0; i < 5; i++) {
@@ -62,6 +63,7 @@ public class BladePath {
                 }
             }
             current = current.go(path.getLast());
+            initialSize++;
         }
         colorId = (int) (Math.random() * 6);
         System.out.println("Created size: " + path.size());
@@ -109,5 +111,9 @@ public class BladePath {
 
     public int getColorId() {
         return colorId;
+    }
+
+    public int getInitialSize() {
+        return initialSize;
     }
 }

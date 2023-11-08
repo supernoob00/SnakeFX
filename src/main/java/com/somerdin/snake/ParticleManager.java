@@ -1,14 +1,30 @@
 package com.somerdin.snake;
 
+import java.util.Arrays;
+
 public class ParticleManager {
     public double[] xPos;
     public double[] yPos;
     public double[] xSpeed;
     public double[] ySpeed;
+    public boolean[] visible;
+
+    private int[] particleVisibility;
+    private int visibleIndex;
+
     private double bottomBounds;
     private double rightBounds;
     private double deceleration;
     private boolean moving = true;
+
+    private static void shuffle(int[] arr) {
+        for (int i = 0; i < arr.length - 1; i++) {
+            int rand = i + (int) (Math.random() * (arr.length - i));
+            int temp = arr[i];
+            arr[i] = arr[rand];
+            arr[rand] = temp;
+        }
+    }
 
     public ParticleManager(int count, double rightBounds, double bottomBounds
             , double deceleration) {
@@ -16,10 +32,22 @@ public class ParticleManager {
         yPos = new double[count];
         xSpeed = new double[count];
         ySpeed = new double[count];
+        visible = new boolean[count];
+        Arrays.fill(visible, true);
+        particleVisibility = new int[count];
+
+        for (int i = 0; i < count; i++) {
+            particleVisibility[i] = i;
+        }
+
+        visibleIndex = count;
 
         this.rightBounds = rightBounds;
         this.bottomBounds = bottomBounds;
         this.deceleration = deceleration;
+
+        // shuffle visibility
+        shuffle(particleVisibility);
     }
 
     private double[] minSpeed;
@@ -46,15 +74,11 @@ public class ParticleManager {
             if (xSpeed[i] != 0 || ySpeed[i] != 0) {
                 motion = true;
             }
-
-            if (motion) {
-                xPos[i] += xSpeed[i] / frames;
-                yPos[i] += ySpeed[i] / frames;
-                decelerate(i);
-            } else {
-                moving = false;
-            }
+            xPos[i] += xSpeed[i] / frames;
+            yPos[i] += ySpeed[i] / frames;
+            decelerate(i);
         }
+        moving = motion;
     }
 
     public boolean isMoving() {
@@ -103,5 +127,19 @@ public class ParticleManager {
 
     public int getCount() {
         return xPos.length;
+    }
+
+    public boolean setRandomParticleInvisible() {
+        if (visibleIndex == 0) {
+            return false;
+        }
+
+        int id = particleVisibility[--visibleIndex];
+        visible[id] = false;
+        return true;
+    }
+
+    public boolean allParticlesInvisible() {
+        return visibleIndex == 0;
     }
 }

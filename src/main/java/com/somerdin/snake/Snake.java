@@ -22,6 +22,7 @@ public class Snake implements Mover {
     private int boostGauge = 100;
     private int boostCooldown = 0;
     private boolean invulnerable = false;
+    private int largest = INITIAL_SIZE;
 
     public Snake(SnakeCell head) {
         this.speed = FRAMES_TO_MOVE;
@@ -139,6 +140,9 @@ public class Snake implements Mover {
                 getTail().getPos().go(tailDir.opposite()),
                 false);
         cells.addLast(newTail);
+        if (getLength() > largest) {
+            largest = getLength();
+        }
     }
 
     public int getBoostGauge() {
@@ -173,8 +177,8 @@ public class Snake implements Mover {
         return boostGauge >= BOOST_GAUGE_USAGE && boostCooldown == 0;
     }
 
-    public void resetLength() {
-        while (cells.size() > INITIAL_SIZE) {
+    public void resetLength(int length) {
+        while (cells.size() > length) {
             cells.removeLast();
         }
     }
@@ -185,5 +189,9 @@ public class Snake implements Mover {
 
     public void setInvulnerable(boolean invulnerable) {
         this.invulnerable = invulnerable;
+    }
+
+    public int getLargest() {
+        return largest;
     }
 }

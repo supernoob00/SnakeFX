@@ -17,6 +17,7 @@ public class GameState {
     PointInt TOP_RIGHT = new PointInt(HEIGHT - 1, 0);
 
     public final Food[][] food;
+    public final long[][] markedForSuckTimestamp;
     public int crumbCount;
     public final int width;
     public final int height;
@@ -27,17 +28,21 @@ public class GameState {
     private ParticleManager bladeParticles;
 
     private int health = 0;
+    private int shields = 0;
 
     private boolean isStarted;
     private boolean isExploding;
     private boolean bladesExploding;
     private boolean isGameOver;
+    private boolean isMagnetized;
+
     private final Deque<SpinBlade> blades = new ArrayDeque<>();
     private final List<PointInt> crumbsToDraw = new ArrayList<>();
 
     private long snakeExplodeTimestamp;
     private long bladeExplodeTimestamp;
     public long snakeInvulnerableTimestamp;
+    public long gameOverTimestamp;
 
 
     private Direction queuedDirection;
@@ -50,6 +55,7 @@ public class GameState {
     // TODO: decide what to do about out of bounds errors
     public GameState(int height, int width) {
         this.food = new Food[height][width];
+        this.markedForSuckTimestamp = new long[height][width];
         this.crumbCount = 0;
         this.width = width;
         this.height = height;
@@ -57,7 +63,8 @@ public class GameState {
         snake = new Snake(new SnakeCell(Direction.RIGHT, new PointInt(14, 12),
                 false));
         setInitialCrumbPattern();
-        // spawnBlade();
+        spawnBlade();
+        placeFood(new PointInt(0, 0), Food.MAGNET);
     }
 
     public Snake getSnake() {
@@ -65,7 +72,7 @@ public class GameState {
     }
 
     public Food getFood(PointInt p) {
-        return food[(int) p.y()][(int) p.x()];
+        return food[p.y()][p.x()];
     }
 
     public void placeFood(PointInt p, Food food) {
@@ -81,7 +88,7 @@ public class GameState {
     private void removeFood(PointInt p) {
         Food food = this.food[p.y()][p.x()];
         this.food[p.y()][p.x()] = null;
-        if (food.isCrumb()) {
+        if (food != null && food.isCrumb()) {
             crumbCount--;
             if (crumbCount == 0) {
                 stage++;
@@ -142,14 +149,70 @@ public class GameState {
 
         Food foodAtHead = getFood(snake.getHead().getPos());
         if (foodAtHead != null) {
-            removeFood(snake.getHead().getPos());
-            totalTime += foodAtHead.getTimeAdd();
+            eatFood(snake.getHead().getPos());
+        }
+
+        // mark all surrounding food for suck if magnetized
+        if (isMagnetized) {
+            System.out.println("SUCKING...");
+
+            markSurroundingFoodForSuck();
+        }
+    }
+
+    private void eatFood(PointInt p) {
+        Food foodAtHead = getFood(p);
+        removeFood(p);
+        if (foodAtHead.isFruit()) {
+            spawnFruit();
+            snake.grow();
+            health += foodAtHead.getHealthValue();
             score += foodAtHead.getScore() * getScoreMultiplier();
-            if (foodAtHead.isFruit()) {
-                spawnFruit();
-                snake.grow();
-                health++;
-                Audio.EAT_FRUIT_SOUND.play();
+            Audio.EAT_FRUIT_SOUND.play();
+        } else if (foodAtHead.isPowerUp()) {
+            switch (foodAtHead) {
+                case SHIELD:
+                    if (shields == 3) {
+                        health += foodAtHead.getHealthValue();
+                        score += foodAtHead.getScore() * getScoreMultiplier();
+                    } else {
+                        shields++;
+                    }
+                    break;
+                case MAGNET:
+                    if (isMagnetized) {
+                        health += foodAtHead.getHealthValue();
+                        score += foodAtHead.getScore() * getScoreMultiplier();
+                    } else {
+                        System.out.println("MAGNETIZED");
+                        isMagnetized = true;
+                    }
+                    break;
+                case INVINCIBLE:
+                    break;
+            }
+        } else {
+            score += foodAtHead.getScore() * getScoreMultiplier();
+        }
+    }
+
+    private void markSurroundingFoodForSuck() {
+        PointInt headPos = snake.getHead().getPos();
+        PointInt topLeft = new PointInt(Math.max(headPos.x() - 1, 0),
+                Math.max(headPos.y() - 1, 0));
+        PointInt bottomRight = new PointInt(Math.min(headPos.x() + 1,
+                width - 1),
+                Math.min(headPos.y() + 1, height - 1));
+        for (int i = topLeft.y(); i <= bottomRight.y(); i++) {
+            for (int j = topLeft.x(); j <= bottomRight.x(); j++) {
+                if (i == headPos.y() && j == headPos.x()) {
+                    continue;
+                }
+                if (food[i][j] != null) {
+                    markedForSuckTimestamp[i][j] = frames;
+                    System.out.println("I: " + frames);
+                    System.out.println("J: " + frames);
+                }
             }
         }
     }
@@ -157,74 +220,68 @@ public class GameState {
     public void spawnFruit() {
         // max amount of attempts to spawn food in a random location,
         // in case something has gone horribly awry
-        int maxTriesLeft = 1000;
         PointInt random = getRandomPoint();
         Food existing = getFood(random);
         while (snake.containsPoint(random)
-                || existing != null
-                && maxTriesLeft > 0) {
+                || existing != null) {
             random = getRandomPoint();
             existing = getFood(random);
-            maxTriesLeft--;
         }
         Food foodToPlace;
+        // player should have better spawn rates for better fruit the longer
+        // they are
+        // TODO: adjust fruit spawn rates
         double typeOfFruitProbability = Math.random();
+        double chance;
         switch (stage) {
             case 1:
-                foodToPlace = Food.RED_APPLE;
+                chance = 1 - (snake.getLength() - snake.INITIAL_SIZE) * 0.025;
+                if (chance < 0.6) {
+                    chance = 0.6;
+                }
+                if (typeOfFruitProbability < chance) {
+                    foodToPlace = Food.RED_APPLE;
+                } else {
+                    foodToPlace = Food.CHERRY;
+                }
                 break;
             case 2:
-                if (typeOfFruitProbability < 0.5) {
+                chance = 1 - (snake.getLength() - Snake.INITIAL_SIZE) * 0.025;
+                if (chance < 0.3) {
+                    chance = 0.3;
+                }
+                if (typeOfFruitProbability < chance) {
                     foodToPlace = Food.RED_APPLE;
-                } else if (typeOfFruitProbability < 0.8) {
-                    foodToPlace = Food.GREEN_APPLE;
                 } else {
-                    foodToPlace = Food.RED_APPLE;
+                    foodToPlace = Food.CHERRY;
                 }
                 break;
             case 3:
-                if (typeOfFruitProbability < 0.6) {
-                    foodToPlace = Food.GREEN_APPLE;
-                } else if (typeOfFruitProbability < 0.75) {
-                    foodToPlace = Food.YELLOW_APPLE;
-                } else if (typeOfFruitProbability < 0.85) {
-                    foodToPlace = Food.RED_APPLE;
-                } else {
-                    foodToPlace = Food.CHERRY;
+                chance = 1 - (snake.getLength() - Snake.INITIAL_SIZE) * 0.025;
+                if (chance < 0.3) {
+                    chance = 0.3;
                 }
-                break;
-            case 4:
-                if (typeOfFruitProbability < 0.65) {
-                    foodToPlace = Food.YELLOW_APPLE;
-                } else if (typeOfFruitProbability < 0.75) {
-                    foodToPlace = Food.GREEN_APPLE;
-                } else if (typeOfFruitProbability < 0.85) {
+                if (typeOfFruitProbability < chance) {
                     foodToPlace = Food.RED_APPLE;
-                } else {
+                } else if (typeOfFruitProbability < chance + (1 - chance)* 0.8) {
                     foodToPlace = Food.CHERRY;
-                }
-                break;
-            case 5:
-                if (typeOfFruitProbability < 0.7) {
-                    foodToPlace = Food.YELLOW_APPLE;
-                } else if (typeOfFruitProbability < 0.75) {
-                    foodToPlace = Food.GREEN_APPLE;
-                } else if (typeOfFruitProbability < 0.85) {
-                    foodToPlace = Food.RED_APPLE;
                 } else {
-                    foodToPlace = Food.CHERRY;
+                    foodToPlace = Food.COOKIE;
                 }
                 break;
             default:
-                if (typeOfFruitProbability < 0.6) {
-                    foodToPlace = Food.YELLOW_APPLE;
-                } else if (typeOfFruitProbability < 0.75) {
-                    foodToPlace = Food.GREEN_APPLE;
-                } else if (typeOfFruitProbability < 0.85) {
-                    foodToPlace = Food.RED_APPLE;
-                } else {
-                    foodToPlace = Food.CHERRY;
+                chance = 1 - (snake.getLength() - Snake.INITIAL_SIZE) * 0.025;
+                if (chance < 0.2) {
+                    chance = 0.2;
                 }
+                if (typeOfFruitProbability < chance) {
+                    foodToPlace = Food.RED_APPLE;
+                } else if (typeOfFruitProbability < chance + (1 - chance)* 0.8) {
+                    foodToPlace = Food.CHERRY;
+                } else {
+                    foodToPlace = Food.COOKIE;
+                }
+                break;
         }
         placeFood(random, foodToPlace);
     }
@@ -263,6 +320,9 @@ public class GameState {
     }
 
     public void spawnBlades() {
+        if (!Audio.BLADE_SOUND.isPlaying()) {
+            Audio.BLADE_SOUND.play();
+        }
         int bladeCount = switch (stage) {
             case 1 -> 3;
             case 2 -> 4;
@@ -272,25 +332,39 @@ public class GameState {
             default -> 15;
         };
         while (blades.size() < bladeCount) {
-            // spawnBlade();
+            spawnBlade();
         }
     }
 
     public void update(long updateCount) {
         frames = updateCount;
-        System.out.println("SIZE " + blades.size());
         if (snakeIsExploding()) {
             if (snakeParticles.isMoving()) {
                 snakeParticles.updatePos(1);
-                System.out.println("moving");
             }
             if (System.nanoTime() - snakeExplodeTimestamp > 3_000_000_000L) {
                  isGameOver = true;
+                 gameOverTimestamp = updateCount;
             }
             if (updateCount % 1000 == 0) {
                 int x = 1;
             }
         } else {
+            if (isMagnetized) {
+                // check all sucked fruits
+                for (int i = 0; i < height; i++) {
+                    for (int j = 0; j < width; j++) {
+                        if (updateCount - markedForSuckTimestamp[i][j] == 15) {
+                            markedForSuckTimestamp[i][j] = 0;
+                            PointInt p = new PointInt(j, i);
+                            if (getFood(p) != null) {
+                                eatFood(new PointInt(j, i));
+                            }
+                        }
+                    }
+                }
+            }
+
             if (updateCount - snakeInvulnerableTimestamp > INVUNERABLE_TIME) {
                 snake.setInvulnerable(false);
             }
@@ -307,6 +381,10 @@ public class GameState {
             if (bladesExploding) {
                 if (bladeParticles.isMoving()) {
                     bladeParticles.updatePos(1);
+                } else if (updateCount % 2 == 0) {
+                    if (!bladeParticles.setRandomParticleInvisible()) {
+                        bladesExploding = false;
+                    }
                 }
             }
 
@@ -323,8 +401,7 @@ public class GameState {
                 // remove from deque if spin-blade is out of bounds
                 if (sb.getBladePath().size() == 0) {
                     it.remove();
-                    // spawnBlade();
-                    System.out.println("Removed!");
+                    spawnBlade();
                 }
             }
 
@@ -334,7 +411,7 @@ public class GameState {
                     takeDamage();
                 }
             }
-            // spawnBlades();
+            spawnBlades();
 
             if (crumbsToDraw.size() > 0) {
                 for (int i = 0; i < 6; i++) {
@@ -345,6 +422,9 @@ public class GameState {
                     spawnFruit();
                 }
             }
+        }
+        if (blades.size() == 0) {
+            Audio.BLADE_SOUND.stop();
         }
     }
 
@@ -395,14 +475,12 @@ public class GameState {
     public void makeBladesExplode() {
         bladesExploding = true;
         bladeExplodeTimestamp = System.nanoTime();
-        int pixelsPerTile =
-                Sprite.TILE_WIDTH_PIXELS * Sprite.TILE_WIDTH_PIXELS;
-        int pixelCount =
-                pixelsPerTile * blades.size();
+        int pixelsPerTile = Sprite.TILE_WIDTH_PIXELS * Sprite.TILE_WIDTH_PIXELS;
+        int pixelCount = pixelsPerTile * blades.size();
 
         bladeParticles = new ParticleManager(pixelCount,
                 GameLoop.PLAYABLE_AREA_WIDTH, GameLoop.PLAYABLE_AREA_HEIGHT,
-                0.01);
+                0.05);
 
         int j = 0;
         for (SpinBlade blade : blades) {
@@ -410,17 +488,47 @@ public class GameState {
 
             for (int i = 0; i < pixelsPerTile; i++) {
                 int id = j * pixelsPerTile + i;
-                bladeParticles.xPos[id] =
-                        p.x() * Sprite.TILE_WIDTH_ACTUAL + (i % Sprite.TILE_WIDTH_PIXELS) * Sprite.PIXEL_WIDTH;
-                bladeParticles.yPos[id] =
-                        p.y() * Sprite.TILE_WIDTH_ACTUAL + (i / Sprite.TILE_WIDTH_PIXELS) * Sprite.PIXEL_WIDTH;
 
-                double randomAngleRange = 70;
+                int xUnits = i % Sprite.TILE_WIDTH_PIXELS;
+                int yUnits = i / Sprite.TILE_WIDTH_PIXELS;
+                double x =
+                        p.x() * Sprite.TILE_WIDTH_ACTUAL + xUnits * Sprite.PIXEL_WIDTH;
+                double y =
+                        p.y() * Sprite.TILE_WIDTH_ACTUAL + yUnits * Sprite.PIXEL_WIDTH;
+                double dist = Math.sqrt(Math.pow(xUnits - 4, 2) + Math.pow(yUnits - 4, 2));
+                bladeParticles.xPos[id] = x;
+                bladeParticles.yPos[id] = y;
+
+                // double randomAngleRange = 30;
+                // from -range / 2 to +range / 2
+                // double variance =
+                        // Math.random() * randomAngleRange - randomAngleRange
+                // / 2;
                 double angle =
-                        (90 - randomAngleRange / 2)
-                                + (int) (Math.random() * randomAngleRange);
-                double speed = 1.8 + 0.8 * Math.random() * snake.speed() * 0.3;
-                bladeParticles.setVelocity(id, angle, speed);
+                        Math.toDegrees(Math.atan((double) yUnits - 4 / (xUnits - 4D)));
+                double factor = dist / Math.sqrt(32);
+                double calcXSpeed = (yUnits - 4);
+                double calcYSpeed = (-xUnits + 4);
+
+                if (calcXSpeed < 0) {
+                    calcXSpeed = 0.5 * Math.max(calcXSpeed,
+                            -4);
+                } else {
+                    calcXSpeed = 0.5 * Math.min(calcXSpeed,
+                            4);
+                }
+
+                if (calcYSpeed < 0) {
+                    calcYSpeed = 0.5 * Math.max(calcYSpeed,
+                        -4);
+                } else {
+                    calcYSpeed = 0.5 * Math.min(calcYSpeed,
+                            4);
+                }
+                bladeParticles.xSpeed[id] =
+                        4 * calcXSpeed * (Math.random() * 0.5 + 0.5);
+                bladeParticles.ySpeed[id] =
+                        4 * calcYSpeed * (Math.random() * 0.5 + 0.5);
             }
             j++;
         }
@@ -437,7 +545,7 @@ public class GameState {
 
         snakeParticles = new ParticleManager(pixelCount,
                 GameLoop.PLAYABLE_AREA_WIDTH, GameLoop.PLAYABLE_AREA_HEIGHT,
-                0.01);
+                0.025);
 
         int j = 0;
         for (SnakeCell sc : snake.getBody()) {
@@ -450,11 +558,12 @@ public class GameState {
                 snakeParticles.yPos[id] =
                         p.y() * Sprite.TILE_WIDTH_ACTUAL + (i / Sprite.TILE_WIDTH_PIXELS) * Sprite.PIXEL_WIDTH;
 
-                double randomAngleRange = 70;
+                double randomAngleRange = 80;
                 double angle =
                         (sc.getDir().getAngle() - randomAngleRange / 2)
                                 + (int) (Math.random() * randomAngleRange);
-                double speed = 1.8 + 0.8 * Math.random() * snake.speed() * 0.3;
+                double speed =
+                        2.5 + (4 * 1 / snake.speed()) + (Math.random() * 0.4 - 0.2);
                 snakeParticles.setVelocity(id, angle, speed);
             }
             j++;
@@ -509,7 +618,6 @@ public class GameState {
             }
         }
         Collections.shuffle(crumbsToDraw);
-        System.out.println(crumbsToDraw.size());
     }
 
     // FOR TESTING
@@ -537,13 +645,23 @@ public class GameState {
         if (snake.isInvulnerable()) {
             return;
         }
-        snake.resetLength();
-        health -= 4;
+        // TODO: play sound for shield
+        if (shields > 0) {
+            shields--;
+        } else {
+            health -= 4;
+            snake.resetLength(Snake.INITIAL_SIZE);
+        }
         if (health < 0) {
             makeSnakeExplode();
         } else {
             snake.setInvulnerable(true);
             snakeInvulnerableTimestamp = frames;
         }
+    }
+
+    private void disableAllPowerUps() {
+        shields = 0;
+        isMagnetized = false;
     }
 }

@@ -115,7 +115,6 @@ public class GameLoop {
             // all game animations update at 60 FPS
             public void handle(long time) {
                 currentTime = time;
-                System.out.println(time);
                 gameState.update(frameCount);
                 draw();
                 prevTime = time;
@@ -173,27 +172,29 @@ public class GameLoop {
         clear();
         drawPaths();
         drawFood();
-        drawBlades();
         if (gameState.snakeIsExploding()) {
             mediaPlayer.stop();
             drawExplodingSnake();
-            if (gameState.isGameOver()) {
-                drawGameOver();
-                if (frameCount % 60 < 30) {
-                    drawContinueText();
-                }
-            }
-        } else {
+        }
+        if (gameState.bladesAreExploding()) {
+            drawExplodingBlades();
+        }
+        drawBlades();
+        if (!gameState.snakeIsExploding()) {
             if (!gameState.getSnake().isInvulnerable()
                     || (frameCount - gameState.snakeInvulnerableTimestamp) % 10 < 5 ) {
                 drawSnake();
             }
-            if (gameState.bladesAreExploding()) {
-                drawExplodingBlades();
-            }
         }
         drawWalls();
         drawGameInfo();
+        if (gameState.isGameOver()) {
+            drawGameOver();
+            // TODO: fix this - not blinking continue text
+            if ((frameCount - gameState.gameOverTimestamp) % 60 < 30) {
+                drawContinueText();
+            }
+        }
     }
 
     private void drawSnake() {
@@ -230,17 +231,42 @@ public class GameLoop {
     }
 
     private void drawPaths() {
+        g.setGlobalAlpha(0.8);
         for (SpinBlade sb : gameState.getBlades()) {
             BladePath bladePath = sb.getBladePath();
             PointInt current = bladePath.getStart();
             Iterator<Direction> it = bladePath.getPath().iterator();
             int i = 0;
             boolean first = true;
+            Direction prev = null;
             while (it.hasNext() && i < bladePath.getDrawn()) {
                 Direction dir = it.next();
-                Sprite bladePathTile =
-                        Sprite.getBladePathTileById(bladePath.getColorId());
-                bladePathTile.setOrientation(dir);
+
+                int corner;
+                if (prev == Direction.DOWN && dir == Direction.RIGHT
+                        || (prev == Direction.LEFT && dir == Direction.UP)) {
+                    corner = Sprite.BOTTOM_LEFT_CORNER;
+                } else if ((prev == Direction.DOWN && dir == Direction.LEFT)
+                        || (prev == Direction.RIGHT && dir == Direction.UP)) {
+                    corner = Sprite.BOTTOM_RIGHT_CORNER;
+                } else if ((prev == Direction.UP && dir == Direction.RIGHT)
+                        || (prev == Direction.LEFT && dir == Direction.DOWN)) {
+                    corner = Sprite.TOP_LEFT_CORNER;
+                } else if ((prev == Direction.UP && dir == Direction.LEFT)
+                        || (prev == Direction.RIGHT && dir == Direction.DOWN)) {
+                    corner = Sprite.TOP_RIGHT_CORNER;
+                } else {
+                    corner = -1;
+                }
+
+                Sprite bladePathTile = Sprite.getBladePathTileById(bladePath.getColorId(), corner);
+                if (corner == -1) {
+                    if (dir == Direction.LEFT || dir == Direction.RIGHT) {
+                        bladePathTile.setRotateAngle(90);
+                    } else {
+                        bladePathTile.setRotateAngle(0);
+                    }
+                }
                 if (first && sb.isMoving()) {
                     drawSpriteToGameBounds(bladePathTile,
                             sb.getPos().x() * cellLength,
@@ -252,8 +278,10 @@ public class GameLoop {
                 current = current.go(dir);
                 first = false;
                 i++;
+                prev = dir;
             }
         }
+        g.setGlobalAlpha(1.0);
     }
 
     private void drawStageText() {
@@ -280,19 +308,36 @@ public class GameLoop {
     }
 
     private void drawFood() {
+        PointInt snakeHeadPoint = gameState.getSnake().getHead().getPos();
+        double snakeHeadX = snakeHeadPoint.x() * cellLength;
+        double snakeHeadY = snakeHeadPoint.y() * cellLength;
         for (int y = 0; y < gameState.height; y++) {
             for (int x = 0; x < gameState.width; x++) {
                 Food food = gameState.getFood(new PointInt(x ,y));
-                    int displayY = y * cellLength;
-                    int displayX = x * cellLength;
-                    if (food != null) {
-                        switch (food) {
-                            case RED_APPLE ->
-                                    drawSpriteToGameBounds(Sprite.APPLE, displayX, displayY);
-                            case CRUMB_1, CRUMB_2, CRUMB_3, CRUMB_4 ->
-                                    drawSpriteToGameBounds(Sprite.getCrumbById(food.getColorId()), displayX,
-                                            displayY);
-                            default -> drawSpriteToGameBounds(Sprite.EMPTY, displayX, displayY);
+                double displayY;
+                double displayX;
+                long suckTimestamp = gameState.markedForSuckTimestamp[y][x];
+                if (suckTimestamp > 0) {
+                    // frames to suck: 30
+                    double factor = ((frameCount - suckTimestamp) / 15D);
+                    displayX = interpolate(x * cellLength, snakeHeadX, factor);
+                    displayY = interpolate(y * cellLength, snakeHeadY, factor);
+                } else {
+                    displayY = y * cellLength;
+                    displayX = x * cellLength;
+                }
+                if (food != null) {
+                    switch (food) {
+                        case RED_APPLE ->
+                                drawSpriteToGameBounds(Sprite.APPLE, displayX, displayY);
+                        case CHERRY ->
+                                drawSpriteToGameBounds(Sprite.CHERRY,
+                                        displayX, displayY);
+                        case COOKIE -> drawSpriteToGameBounds(Sprite.COOKIE, displayX, displayY);
+                        case MAGNET -> drawSpriteToGameBounds(Sprite.MAGNET, displayX, displayY);
+                        case CRUMB_1, CRUMB_2, CRUMB_3, CRUMB_4 ->
+                                drawSpriteToGameBounds(Sprite.getCrumbById(food.getColorId()), displayX,
+                                        displayY);
                     }
                 }
             }
@@ -302,21 +347,25 @@ public class GameLoop {
     private void drawExplodingSnake() {
         ParticleManager pm = gameState.getSnakeParticles();
         g.setFill(Color.GREEN);
-        drawParticles(pm);
+        drawParticles(pm, 4);
     }
 
     private void drawExplodingBlades() {
         ParticleManager pm = gameState.getBladeParticles();
         g.setFill(Color.GREY);
-        drawParticles(pm);
+        drawParticles(pm, 4);
     }
 
-    private void drawParticles(ParticleManager pm) {
-        double particleSize = Sprite.PIXEL_WIDTH;
-        for (int i = 0; i < pm.getCount(); i++) {
-            double x = WALL_WIDTH + pm.xPos[i];
-            double y = WALL_WIDTH + pm.yPos[i];
-            g.fillRect(x, y, particleSize, particleSize);
+    private void drawParticles(ParticleManager pm, int pixels) {
+        if (pm.allParticlesInvisible()) {
+            return;
+        }
+        for (int id = 0; id < pm.getCount(); id++) {
+            if (pm.visible[id]) {
+                double x = WALL_WIDTH + pm.xPos[id];
+                double y = WALL_WIDTH + pm.yPos[id];
+                g.fillRect(x, y, pixels, pixels);
+            }
         }
     }
 

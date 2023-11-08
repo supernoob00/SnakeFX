@@ -17,10 +17,13 @@ public final class Sprite {
     public static final int SCALE_FACTOR = 3;
     public static final int TILE_WIDTH_ACTUAL = 8 * SCALE_FACTOR;
     public static final int PIXEL_WIDTH = TILE_WIDTH_ACTUAL / TILE_WIDTH_PIXELS;
+    public static final double CENTER_TO_CORNER =
+            Math.sqrt(Math.pow(Sprite.TILE_WIDTH_PIXELS / 2D, 2)
+                    + Math.pow(Sprite.TILE_WIDTH_PIXELS / 2D, 2));
 
     private static final Image PRIMARY_SPRITE_SHEET;
     private static final Image BLADE_PATH_SPRITE_SHEET;
-    private static final Image HEART_SPRITESHEET;
+    private static final Image HEART_SPRITE_SHEET;
 
     static {
         try (InputStream in = Sprite.class.getResourceAsStream("/pixil-layer" +
@@ -30,7 +33,7 @@ public final class Sprite {
         InputStream in3 = Sprite.class.getResourceAsStream("/pixil-frame-heart.png");) {
             PRIMARY_SPRITE_SHEET = new Image(in, 128 * SCALE_FACTOR, 128 * SCALE_FACTOR, true, false);
             BLADE_PATH_SPRITE_SHEET = new Image(in2, 32 * SCALE_FACTOR, 32 * SCALE_FACTOR, true, false);
-            HEART_SPRITESHEET = new Image(in3, 32 * SCALE_FACTOR, 32 * SCALE_FACTOR, true, false);
+            HEART_SPRITE_SHEET = new Image(in3, 32 * SCALE_FACTOR, 32 * SCALE_FACTOR, true, false);
         } catch (IOException e) {
             throw new RuntimeException("Unable to find resource", e);
         }
@@ -41,11 +44,15 @@ public final class Sprite {
     private static final ImageView SNAKE_BODY_IMG =
             new ImageView(PRIMARY_SPRITE_SHEET);
     private static final ImageView RED_APPLE_IMG = new ImageView(PRIMARY_SPRITE_SHEET);
-    private static final ImageView GREEN_APPLE_IMG =
-            new ImageView(PRIMARY_SPRITE_SHEET);
-    private static final ImageView YELLOW_APPLE_IMG =
-            new ImageView(PRIMARY_SPRITE_SHEET);
     private static final ImageView CHERRY_IMG = new ImageView(PRIMARY_SPRITE_SHEET);
+    private static final ImageView COOKIE_IMG =
+            new ImageView(PRIMARY_SPRITE_SHEET);
+    private static final ImageView SHIELD_IMG =
+            new ImageView(PRIMARY_SPRITE_SHEET);
+    private static final ImageView MAGNET_IMG =
+            new ImageView(PRIMARY_SPRITE_SHEET);
+    private static final ImageView BOMB_IMG =
+            new ImageView(PRIMARY_SPRITE_SHEET);
     private static final ImageView CRUMB_IMG_1 =
             new ImageView(PRIMARY_SPRITE_SHEET);
     private static final ImageView CRUMB_IMG_2 =
@@ -54,7 +61,6 @@ public final class Sprite {
             new ImageView(PRIMARY_SPRITE_SHEET);
     private static final ImageView CRUMB_IMG_4 =
             new ImageView(PRIMARY_SPRITE_SHEET);
-    private static final ImageView EMPTY_IMG = new ImageView(PRIMARY_SPRITE_SHEET);
     // TODO: add separate "absoluteDraw" method to gameloop
     public static final ImageView WALL_IMG = new ImageView(PRIMARY_SPRITE_SHEET);
     public static final ImageView WALL_CORNER_IMG =
@@ -63,28 +69,29 @@ public final class Sprite {
     private static final ImageView BLADE_PATH_IMG =
             new ImageView(BLADE_PATH_SPRITE_SHEET);
     private static final ImageView HEART_EMPTY_IMG =
-            new ImageView(HEART_SPRITESHEET);
+            new ImageView(HEART_SPRITE_SHEET);
     private static final ImageView HEART_QUARTER_IMG =
-            new ImageView(HEART_SPRITESHEET);
+            new ImageView(HEART_SPRITE_SHEET);
     private static final ImageView HEART_HALF_IMG =
-            new ImageView(HEART_SPRITESHEET);
+            new ImageView(HEART_SPRITE_SHEET);
     private static final ImageView HEART_THREE_QUARTERS_IMG =
-            new ImageView(HEART_SPRITESHEET);
+            new ImageView(HEART_SPRITE_SHEET);
     private static final ImageView HEART_FULL_IMG =
-            new ImageView(HEART_SPRITESHEET);
+            new ImageView(HEART_SPRITE_SHEET);
 
     static {
         SNAKE_HEAD_IMG.setViewport(getViewport(1, 3, TILE_WIDTH_ACTUAL));
         SNAKE_BODY_IMG.setViewport(getViewport(5, 3, TILE_WIDTH_ACTUAL));
         RED_APPLE_IMG.setViewport(getViewport(6, 0, TILE_WIDTH_ACTUAL));
-        GREEN_APPLE_IMG.setViewport(getViewport(6, 1, TILE_WIDTH_ACTUAL));
-        YELLOW_APPLE_IMG.setViewport(getViewport(6, 4, TILE_WIDTH_ACTUAL));
         CHERRY_IMG.setViewport(getViewport(6, 3, TILE_WIDTH_ACTUAL));
+        COOKIE_IMG.setViewport(getViewport(7, 3, TILE_WIDTH_ACTUAL));
+        SHIELD_IMG.setViewport(getViewport(0, 0, TILE_WIDTH_ACTUAL));
+        MAGNET_IMG.setViewport(getViewport(0, 0, TILE_WIDTH_ACTUAL));
+        BOMB_IMG.setViewport(getViewport(0, 0, TILE_WIDTH_ACTUAL));
         CRUMB_IMG_1.setViewport(getViewport(7, 5, TILE_WIDTH_ACTUAL));
         CRUMB_IMG_2.setViewport(getViewport(8, 5, TILE_WIDTH_ACTUAL));
         CRUMB_IMG_3.setViewport(getViewport(9, 5, TILE_WIDTH_ACTUAL));
         CRUMB_IMG_4.setViewport(getViewport(10, 5, TILE_WIDTH_ACTUAL));
-        EMPTY_IMG.setViewport(getViewport(2, 6, TILE_WIDTH_ACTUAL));
         WALL_IMG.setViewport(getViewport(3, 6, TILE_WIDTH_ACTUAL));
         WALL_CORNER_IMG.setViewport(getViewport(4, 6, TILE_WIDTH_ACTUAL));
         SHURIKEN_IMG.setViewport(getViewport(1, 6, TILE_WIDTH_ACTUAL));
@@ -101,7 +108,11 @@ public final class Sprite {
     public static final Sprite SNAKE_BODY =
             new Sprite(Sprite.SNAKE_BODY_IMG);
     public static final Sprite APPLE = new Sprite(Sprite.RED_APPLE_IMG);
-    public static final Sprite EMPTY = new Sprite(Sprite.EMPTY_IMG);
+    public static final Sprite CHERRY = new Sprite(Sprite.CHERRY_IMG);
+    public static final Sprite COOKIE = new Sprite(Sprite.COOKIE_IMG);
+    public static final Sprite SHIELD = new Sprite(Sprite.SHIELD_IMG);
+    public static final Sprite MAGNET = new Sprite(Sprite.MAGNET_IMG);
+    public static final Sprite BOMB = new Sprite(Sprite.BOMB_IMG);
     public static final Sprite WALL = new Sprite(Sprite.WALL_IMG);
     public static final Sprite WALL_CORNER = new Sprite(Sprite.WALL_CORNER_IMG);
     public static final Sprite SHURIKEN =
@@ -136,15 +147,16 @@ public final class Sprite {
                 case 2 -> viewport = getViewport(3, 1, TILE_WIDTH_ACTUAL);
                 default -> viewport = getViewport(0, 2, TILE_WIDTH_ACTUAL);
             }
+            switch (whichCorner) {
+                case BOTTOM_LEFT_CORNER -> BLADE_PATH.imgView.setRotate(0);
+                case BOTTOM_RIGHT_CORNER -> BLADE_PATH.imgView.setRotate(-90);
+                case TOP_LEFT_CORNER -> BLADE_PATH.imgView.setRotate(90);
+                case TOP_RIGHT_CORNER -> BLADE_PATH.imgView.setRotate(180);
+                default -> throw new IllegalArgumentException("Invalid corner " +
+                        "argument: " + whichCorner);
+            }
         }
-        switch (whichCorner) {
-            case BOTTOM_LEFT_CORNER -> BLADE_PATH.imgView.setRotate(0);
-            case BOTTOM_RIGHT_CORNER -> BLADE_PATH.imgView.setRotate(-90);
-            case TOP_LEFT_CORNER -> BLADE_PATH.imgView.setRotate(90);
-            case TOP_RIGHT_CORNER -> BLADE_PATH.imgView.setRotate(180);
-            default -> throw new IllegalArgumentException("Invalid angle " +
-                    "argument");
-        }
+
         BLADE_PATH.imgView.setViewport(viewport);
         return BLADE_PATH;
     }

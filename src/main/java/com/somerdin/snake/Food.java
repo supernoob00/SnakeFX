@@ -1,16 +1,22 @@
 package com.somerdin.snake;
 
 public enum Food {
-    RED_APPLE(5_000_000_000L, 400, 0),
-    GREEN_APPLE(5_000_000_000L, 500, 0),
-    YELLOW_APPLE(5_000_000_000L, 800, 0),
-    CHERRY(10_000_000_000L, 1000, 0),
+    // fruit
+    RED_APPLE(500, 1, 0),
+    CHERRY(1000, 2, 0),
+    COOKIE(2000, 4, 0),
 
-    CRUMB_1(0, 10, 1),
-    CRUMB_2(0, 10, 2),
-    CRUMB_3(0, 10, 3),
-    CRUMB_4(0, 10, 4),
-    HIDDEN_CRUMB(0, 0, 0);
+    // power ups
+    SHIELD(500, 4, 0),
+    INVINCIBLE(500, 4, 0),
+    MAGNET(500, 4, 0),
+    BOMB(1000, 8, 0),
+
+    // represent different crumb colors
+    CRUMB_1(10, 0, 1),
+    CRUMB_2(10, 0, 2),
+    CRUMB_3(10, 0, 3),
+    CRUMB_4(10, 0, 4);
 
     public static Food getRandomCrumb() {
         return switch ((int) (4 * Math.random()) + 1) {
@@ -23,23 +29,26 @@ public enum Food {
 
     public static final Food[] FRUITS = new Food[] {
             RED_APPLE,
-            GREEN_APPLE,
-            YELLOW_APPLE,
-            CHERRY
+            CHERRY,
+            COOKIE
     };
 
-    private long timeAdd;
     private int score;
+    private int healthValue;
     private int colorId;
 
-    private Food(long timeAdd, int score, int colorId) {
-        this.timeAdd = timeAdd;
+    private Food(int score, int healthValue, int colorId) {
         this.score = score;
+        this.healthValue = healthValue;
         this.colorId = colorId;
     }
 
     public boolean isFruit() {
-        return this == RED_APPLE;
+        return this == RED_APPLE || this == CHERRY || this == COOKIE;
+    }
+
+    public boolean isPowerUp() {
+        return this == SHIELD || this == INVINCIBLE || this == MAGNET || this == BOMB;
     }
 
     public boolean isCrumb() {
@@ -47,12 +56,12 @@ public enum Food {
                 || this == CRUMB_3 || this == CRUMB_4;
     }
 
-    public long getTimeAdd() {
-        return timeAdd;
-    }
-
     public int getScore() {
         return score;
+    }
+
+    public int getHealthValue() {
+        return healthValue;
     }
 
     public int getColorId() {
