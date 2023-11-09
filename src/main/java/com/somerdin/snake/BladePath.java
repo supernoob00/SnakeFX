@@ -66,7 +66,6 @@ public class BladePath {
             initialSize++;
         }
         colorId = (int) (Math.random() * 6);
-        System.out.println("Created size: " + path.size());
     }
 
     public PointInt getStart() {

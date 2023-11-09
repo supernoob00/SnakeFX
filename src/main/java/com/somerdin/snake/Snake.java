@@ -21,7 +21,6 @@ public class Snake implements Mover {
     private int speed;
     private int boostGauge = 100;
     private int boostCooldown = 0;
-    private boolean invulnerable = false;
     private int largest = INITIAL_SIZE;
 
     public Snake(SnakeCell head) {
@@ -181,14 +180,6 @@ public class Snake implements Mover {
         while (cells.size() > length) {
             cells.removeLast();
         }
-    }
-
-    public boolean isInvulnerable() {
-        return invulnerable;
-    }
-
-    public void setInvulnerable(boolean invulnerable) {
-        this.invulnerable = invulnerable;
     }
 
     public int getLargest() {
