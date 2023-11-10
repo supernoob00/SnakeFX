@@ -25,16 +25,25 @@ public final class Sprite {
     private static final Image PRIMARY_SPRITE_SHEET;
     private static final Image BLADE_PATH_SPRITE_SHEET;
     private static final Image HEART_SPRITE_SHEET;
+    private static final Image SHIELD_SPRITE_SHEET;
+    private static final Image POWER_UP_SPRITE_SHEET;
 
     static {
-        try (InputStream in = Sprite.class.getResourceAsStream("/pixil-layer" +
+        try (InputStream primarySprites = Sprite.class.getResourceAsStream("/pixil-layer" +
                 "-Background" +
                 ".png");
-        InputStream in2 = Sprite.class.getResourceAsStream("/blade-path.png");
-        InputStream in3 = Sprite.class.getResourceAsStream("/pixil-frame-heart.png");) {
-            PRIMARY_SPRITE_SHEET = new Image(in, 128 * SCALE_FACTOR, 128 * SCALE_FACTOR, true, false);
-            BLADE_PATH_SPRITE_SHEET = new Image(in2, 32 * SCALE_FACTOR, 32 * SCALE_FACTOR, true, false);
-            HEART_SPRITE_SHEET = new Image(in3, 32 * SCALE_FACTOR, 32 * SCALE_FACTOR, true, false);
+        InputStream bladePathSprites = Sprite.class.getResourceAsStream("/blade-path.png");
+        InputStream heartSprites = Sprite.class.getResourceAsStream("/pixil-frame-heart.png");
+        InputStream shieldSprite = Sprite.class.getResourceAsStream("/shield.png");
+        InputStream powerUpSprites =
+                     Sprite.class.getResourceAsStream("/powerups.png")) {
+            PRIMARY_SPRITE_SHEET = new Image(primarySprites, 128 * SCALE_FACTOR, 128 * SCALE_FACTOR, true, false);
+            BLADE_PATH_SPRITE_SHEET = new Image(bladePathSprites, 32 * SCALE_FACTOR, 32 * SCALE_FACTOR, true, false);
+            HEART_SPRITE_SHEET = new Image(heartSprites, 32 * SCALE_FACTOR, 32 * SCALE_FACTOR, true, false);
+            SHIELD_SPRITE_SHEET = new Image(shieldSprite, 8 * SCALE_FACTOR,
+                    8 * SCALE_FACTOR, true, false);
+            POWER_UP_SPRITE_SHEET = new Image(powerUpSprites,
+                    32 * SCALE_FACTOR, 32 * SCALE_FACTOR, true, false);
         } catch (IOException e) {
             throw new RuntimeException("Unable to find resource", e);
         }
@@ -44,18 +53,30 @@ public final class Sprite {
             new ImageView(PRIMARY_SPRITE_SHEET);
     private static final ImageView SNAKE_BODY_IMG =
             new ImageView(PRIMARY_SPRITE_SHEET);
+    private static final ImageView SNAKE_HEAD_IMG_ONE_SHIELD =
+            new ImageView(PRIMARY_SPRITE_SHEET);
+    private static final ImageView SNAKE_BODY_IMG_ONE_SHIELD =
+            new ImageView(PRIMARY_SPRITE_SHEET);
+    private static final ImageView SNAKE_HEAD_IMG_TWO_SHIELD =
+            new ImageView(PRIMARY_SPRITE_SHEET);
+    private static final ImageView SNAKE_BODY_IMG_TWO_SHIELD =
+            new ImageView(PRIMARY_SPRITE_SHEET);
+    private static final ImageView SNAKE_HEAD_IMG_THREE_SHIELD =
+            new ImageView(PRIMARY_SPRITE_SHEET);
+    private static final ImageView SNAKE_BODY_IMG_THREE_SHIELD =
+            new ImageView(PRIMARY_SPRITE_SHEET);
     private static final ImageView RED_APPLE_IMG = new ImageView(PRIMARY_SPRITE_SHEET);
     private static final ImageView CHERRY_IMG = new ImageView(PRIMARY_SPRITE_SHEET);
     private static final ImageView COOKIE_IMG =
             new ImageView(PRIMARY_SPRITE_SHEET);
     private static final ImageView SHIELD_IMG =
-            new ImageView(PRIMARY_SPRITE_SHEET);
+            new ImageView(SHIELD_SPRITE_SHEET);
     private static final ImageView MAGNET_IMG =
-            new ImageView(PRIMARY_SPRITE_SHEET);
+            new ImageView(POWER_UP_SPRITE_SHEET);
     private static final ImageView BOMB_IMG =
-            new ImageView(PRIMARY_SPRITE_SHEET);
+            new ImageView(POWER_UP_SPRITE_SHEET);
     private static final ImageView INVINCIBLE_IMG =
-            new ImageView(PRIMARY_SPRITE_SHEET);
+            new ImageView(POWER_UP_SPRITE_SHEET);
     private static final ImageView CRUMB_IMG_1 =
             new ImageView(PRIMARY_SPRITE_SHEET);
     private static final ImageView CRUMB_IMG_2 =
@@ -66,8 +87,7 @@ public final class Sprite {
             new ImageView(PRIMARY_SPRITE_SHEET);
     // TODO: add separate "absoluteDraw" method to gameloop
     public static final ImageView WALL_IMG = new ImageView(PRIMARY_SPRITE_SHEET);
-    public static final ImageView WALL_CORNER_IMG =
-            new ImageView(PRIMARY_SPRITE_SHEET);
+    public static final ImageView WALL_CORNER_IMG = new ImageView(PRIMARY_SPRITE_SHEET);
     public static final ImageView SHURIKEN_IMG = new ImageView(PRIMARY_SPRITE_SHEET);
     private static final ImageView BLADE_PATH_IMG =
             new ImageView(BLADE_PATH_SPRITE_SHEET);
@@ -85,20 +105,32 @@ public final class Sprite {
     static {
         SNAKE_HEAD_IMG.setViewport(getViewport(1, 3, TILE_WIDTH_ACTUAL));
         SNAKE_BODY_IMG.setViewport(getViewport(5, 3, TILE_WIDTH_ACTUAL));
+        SNAKE_HEAD_IMG_ONE_SHIELD.setViewport(getViewport(1, 7,
+                TILE_WIDTH_ACTUAL));
+        SNAKE_BODY_IMG_ONE_SHIELD.setViewport(getViewport(5, 7,
+                TILE_WIDTH_ACTUAL));
+        SNAKE_HEAD_IMG_TWO_SHIELD.setViewport(getViewport(1, 8,
+                TILE_WIDTH_ACTUAL));
+        SNAKE_BODY_IMG_TWO_SHIELD.setViewport(getViewport(5, 8,
+                TILE_WIDTH_ACTUAL));
+        SNAKE_HEAD_IMG_THREE_SHIELD.setViewport(getViewport(1, 9,
+                TILE_WIDTH_ACTUAL));
+        SNAKE_BODY_IMG_THREE_SHIELD.setViewport(getViewport(5, 9,
+                TILE_WIDTH_ACTUAL));
         RED_APPLE_IMG.setViewport(getViewport(6, 0, TILE_WIDTH_ACTUAL));
         CHERRY_IMG.setViewport(getViewport(6, 3, TILE_WIDTH_ACTUAL));
         COOKIE_IMG.setViewport(getViewport(7, 3, TILE_WIDTH_ACTUAL));
         SHIELD_IMG.setViewport(getViewport(0, 0, TILE_WIDTH_ACTUAL));
-        INVINCIBLE_IMG.setViewport(getViewport(0, 0, TILE_WIDTH_ACTUAL));
+        INVINCIBLE_IMG.setViewport(getViewport(0, 1, TILE_WIDTH_ACTUAL));
         MAGNET_IMG.setViewport(getViewport(0, 0, TILE_WIDTH_ACTUAL));
-        BOMB_IMG.setViewport(getViewport(0, 0, TILE_WIDTH_ACTUAL));
+        BOMB_IMG.setViewport(getViewport(1, 0, TILE_WIDTH_ACTUAL));
         CRUMB_IMG_1.setViewport(getViewport(7, 5, TILE_WIDTH_ACTUAL));
         CRUMB_IMG_2.setViewport(getViewport(8, 5, TILE_WIDTH_ACTUAL));
         CRUMB_IMG_3.setViewport(getViewport(9, 5, TILE_WIDTH_ACTUAL));
         CRUMB_IMG_4.setViewport(getViewport(10, 5, TILE_WIDTH_ACTUAL));
         WALL_IMG.setViewport(getViewport(3, 6, TILE_WIDTH_ACTUAL));
         WALL_CORNER_IMG.setViewport(getViewport(4, 6, TILE_WIDTH_ACTUAL));
-        SHURIKEN_IMG.setViewport(getViewport(1, 6, TILE_WIDTH_ACTUAL));
+        SHURIKEN_IMG.setViewport(getViewport(7, 6, TILE_WIDTH_ACTUAL));
         HEART_EMPTY_IMG.setViewport(getViewport(0, 0, TILE_WIDTH_ACTUAL));
         HEART_QUARTER_IMG.setViewport(getViewport(1, 0, TILE_WIDTH_ACTUAL));
         HEART_HALF_IMG.setViewport(getViewport(2, 0, TILE_WIDTH_ACTUAL));
@@ -112,17 +144,17 @@ public final class Sprite {
     public static final Sprite SNAKE_BODY =
             new Sprite(Sprite.SNAKE_BODY_IMG);
     public static final Sprite SNAKE_HEAD_ONE_SHIELD =
-            new Sprite(Sprite.SNAKE_HEAD_IMG);
+            new Sprite(Sprite.SNAKE_HEAD_IMG_ONE_SHIELD);
     public static final Sprite SNAKE_BODY_ONE_SHIELD =
-            new Sprite(Sprite.SNAKE_BODY_IMG);
+            new Sprite(Sprite.SNAKE_BODY_IMG_ONE_SHIELD);
     public static final Sprite SNAKE_BODY_TWO_SHIELD =
-            new Sprite(Sprite.SNAKE_BODY_IMG);
+            new Sprite(Sprite.SNAKE_BODY_IMG_TWO_SHIELD);
     public static final Sprite SNAKE_HEAD_TWO_SHIELD =
-            new Sprite(Sprite.SNAKE_HEAD_IMG);
+            new Sprite(Sprite.SNAKE_HEAD_IMG_TWO_SHIELD);
     public static final Sprite SNAKE_BODY_THREE_SHIELD =
-            new Sprite(Sprite.SNAKE_BODY_IMG);
+            new Sprite(Sprite.SNAKE_BODY_IMG_THREE_SHIELD);
     public static final Sprite SNAKE_HEAD_THREE_SHIELD =
-            new Sprite(Sprite.SNAKE_HEAD_IMG);
+            new Sprite(Sprite.SNAKE_HEAD_IMG_THREE_SHIELD);
     public static final Sprite APPLE = new Sprite(Sprite.RED_APPLE_IMG);
     public static final Sprite CHERRY = new Sprite(Sprite.CHERRY_IMG);
     public static final Sprite COOKIE = new Sprite(Sprite.COOKIE_IMG);
@@ -195,7 +227,7 @@ public final class Sprite {
     }
 
     private ImageView imgView;
-    // Direction.UP is right-side up, rotation angle always stored postive
+    // Direction.UP is right-side up, rotation angle always stored positive
     private double rotateAngle;
     public Sprite(ImageView imgView, double rotateAngle) {
         this.imgView = imgView;
@@ -204,6 +236,7 @@ public final class Sprite {
         }
         this.rotateAngle = rotateAngle % 360;
     };
+
     public Sprite(ImageView imgView) {
         this(imgView, 0);
     }

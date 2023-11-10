@@ -73,11 +73,10 @@ public class GameState {
 
         snake = new Snake(new SnakeCell(Direction.RIGHT, new PointInt(14, 12),
                 false));
-        // setInitialCrumbPattern();
+        setInitialCrumbPattern();
         spawnBlade();
         placeFood(new PointInt(0, 0), new Item(Food.MAGNET, frames));
-        placeFood(new PointInt(5, 5), new Item(Food.BOMB, frames));
-        placeFood(new PointInt(6, 6), new Item(Food.INVINCIBLE, frames));
+        placeFood(new PointInt(6, 6), new Item(Food.BOMB, frames));
     }
 
     public Snake getSnake() {
@@ -354,7 +353,7 @@ public class GameState {
 
     public void spawnBlades() {
         if (!Audio.BLADE_SOUND.isPlaying()) {
-            Audio.BLADE_SOUND.play();
+            // Audio.BLADE_SOUND.play();
         }
         int bladeCount = switch (stage) {
             case 1 -> 3;

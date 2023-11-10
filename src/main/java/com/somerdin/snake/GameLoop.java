@@ -8,6 +8,7 @@ import com.somerdin.snake.Resource.Sprite;
 import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.effect.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.paint.Color;
@@ -204,9 +205,18 @@ public class GameLoop {
         Sprite toDraw = null;
         Snake snake = gameState.getSnake();
         boolean headDrawn = false;
+
+        int i = 0;
         for (SnakeCell sc : snake.getBody()) {
             if (sc.isCorner()) {
-                drawSpriteToGameBounds(Sprite.SNAKE_BODY,
+                toDraw = switch (gameState.shieldCount()) {
+                    case 0 -> Sprite.SNAKE_BODY;
+                    case 1 -> Sprite.SNAKE_BODY_ONE_SHIELD;
+                    case 2 -> Sprite.SNAKE_BODY_TWO_SHIELD;
+                    case 3 -> Sprite.SNAKE_BODY_THREE_SHIELD;
+                    default -> throw new IllegalStateException("Unexpected value: " + gameState.shieldCount());
+                };
+                drawSpriteToGameBounds(toDraw,
                         sc.getPos().x() * cellLength,
                         sc.getPos().y() * cellLength);
             }
@@ -234,8 +244,28 @@ public class GameLoop {
                     default -> throw new IllegalStateException("Unexpected value: " + gameState.shieldCount());
                 };
             }
+            System.out.println("SHIELD COUNT: " + gameState.shieldCount());
+            if (gameState.INVINCIBLE_POWER_UP_EVENT.inProgress(frameCount)) {
+                // TODO: figure out how to add invincible effect
+                if (i / 10 == frameCount % gameState.getSnake().getLength()) {
+                    ColorAdjust monochrome = new ColorAdjust();
+                    monochrome.setSaturation(-1.0);
+                    Effect effect = new Blend(BlendMode.MULTIPLY, monochrome,
+                            new ColorInput(
+                                    0,
+                                    0,
+                                    Sprite.TILE_WIDTH_ACTUAL,
+                                    Sprite.TILE_WIDTH_ACTUAL,
+                                    Color.RED
+                            ));
+                    g.save();
+                    g.setEffect(effect);
+                }
+            }
             toDraw.setOrientation(sc.getDir());
             drawSpriteToGameBounds(toDraw, x, y);
+            g.restore();
+            i++;
         }
     }
 
@@ -387,7 +417,7 @@ public class GameLoop {
                 ParticleManager pm = blade.getParticles();
                 drawParticles(pm, 4);
             } else {
-                Sprite.SHURIKEN.rotate(10);
+                Sprite.SHURIKEN.rotate(5);
                 drawSpriteToGameBounds(Sprite.SHURIKEN,
                         blade.getPos().x() * cellLength,
                         blade.getPos().y() * cellLength);
@@ -481,6 +511,7 @@ public class GameLoop {
     }
 
     private void drawWalls() {
+        g.setFill(Color.BLACK);
         for (int i = 0; i <= gameState.width + 1; i++) {
             for (int j = 0; j <= gameState.height + 1; j++) {
                 int x = j * cellLength;
@@ -488,6 +519,7 @@ public class GameLoop {
                 Sprite wallSprite;
                 if (i == 0 || j == 0
                         || i == gameState.width + 1 || j == gameState.width + 1) {
+                    g.fillRect(x, y, cellLength, cellLength);
                     // top left
                     if (i == 0 && j == 0) {
                         wallSprite = Sprite.WALL_CORNER;
