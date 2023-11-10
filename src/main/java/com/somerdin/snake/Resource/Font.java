@@ -1,4 +1,4 @@
-package com.somerdin.snake;
+package com.somerdin.snake.Resource;
 
 import java.io.IOException;
 import java.io.InputStream;

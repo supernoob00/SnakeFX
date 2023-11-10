@@ -8,4 +8,6 @@ module com.somerdin.snake {
     exports com.somerdin.snake;
     exports com.somerdin.snake.Point;
     opens com.somerdin.snake.Point to javafx.fxml;
+    exports com.somerdin.snake.Resource;
+    opens com.somerdin.snake.Resource to javafx.fxml;
 }

@@ -1,4 +1,4 @@
-package com.somerdin.snake;
+package com.somerdin.snake.Resource;
 
 import javafx.scene.media.AudioClip;
 import javafx.scene.media.Media;
@@ -10,6 +10,9 @@ public class Audio {
             new AudioClip(Audio.class.getResource("/sound/sfx_coin_single3" +
                     ".wav").toExternalForm());
     public static final AudioClip EAT_FRUIT_SOUND =
+            new AudioClip(Audio.class.getResource("/sound" +
+                    "/sfx_sounds_powerup17.wav").toExternalForm());
+    public static final AudioClip POWER_UP_SOUND =
             new AudioClip(Audio.class.getResource("/sound" +
                     "/sfx_sounds_powerup17.wav").toExternalForm());
     public static final AudioClip DEATH_SOUND = new AudioClip(Audio.class.getResource(
@@ -25,6 +28,7 @@ public class Audio {
     static {
         EAT_CRUMB_SOUND.setVolume(0.5);
         EAT_FRUIT_SOUND.setVolume(0.25);
+        POWER_UP_SOUND.setVolume(0.3);
         DEATH_SOUND.setVolume(0.8);
         DAMAGE_SOUND.setVolume(0.6);
         BLADE_SOUND.setVolume(0.3);

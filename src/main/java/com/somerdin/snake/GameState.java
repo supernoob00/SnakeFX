@@ -2,12 +2,18 @@ package com.somerdin.snake;
 
 import com.somerdin.snake.Point.PointDouble;
 import com.somerdin.snake.Point.PointInt;
+import com.somerdin.snake.Resource.Audio;
+import com.somerdin.snake.Resource.Sprite;
+import javafx.scene.shape.Circle;
 
 import java.util.*;
 
 public class GameState {
     public static final int WIDTH = 25;
     public static final int HEIGHT = 25;
+
+    public static final double INITIAL_BOMB_RADIUS =
+            Sprite.TILE_WIDTH_ACTUAL / 2;
 
     public final int width;
     public final int height;
@@ -18,6 +24,7 @@ public class GameState {
 
     private final Deque<SpinBlade> blades = new ArrayDeque<>();
     private final List<PointInt> crumbsToDraw = new ArrayList<>();
+    private Circle bombRadius = new Circle();
 
     public final TimedEvent GAME_OVER_EVENT =
             new TimedEvent(TimedEvent.TimedEventType.GAME_OVER);
@@ -66,9 +73,11 @@ public class GameState {
 
         snake = new Snake(new SnakeCell(Direction.RIGHT, new PointInt(14, 12),
                 false));
-        setInitialCrumbPattern();
+        // setInitialCrumbPattern();
         spawnBlade();
         placeFood(new PointInt(0, 0), new Item(Food.MAGNET, frames));
+        placeFood(new PointInt(5, 5), new Item(Food.BOMB, frames));
+        placeFood(new PointInt(6, 6), new Item(Food.INVINCIBLE, frames));
     }
 
     public Snake getSnake() {
@@ -147,7 +156,9 @@ public class GameState {
         }
         snake.move();
 
-        if (snake.headOnBody()) {
+        if (snake.headOnBody()
+                && !INVULNERABLE_EVENT.inProgress(frames)
+                && !INVINCIBLE_POWER_UP_EVENT.inProgress(frames)) {
             takeDamage();
         }
 
@@ -158,7 +169,7 @@ public class GameState {
 
         // mark all surrounding food for suck if magnetized
         if (MAGNETIZED_POWER_UP_EVENT.inProgress(frames)) {
-            markSurroundingFoodForSuck();
+            markFoodForAttract();
         }
     }
 
@@ -191,27 +202,49 @@ public class GameState {
                     }
                     break;
                 case INVINCIBLE:
+                    if (INVINCIBLE_POWER_UP_EVENT.inProgress(frames)) {
+                        health += foodAtHead.getHealthValue();
+                        score += foodAtHead.getScore() * getScoreMultiplier();
+                    } else {
+                        INVINCIBLE_POWER_UP_EVENT.start(frames);
+                    }
                     break;
+                case BOMB:
+                    if (BOMB_POWER_UP_EVENT.inProgress(frames)) {
+                        health += foodAtHead.getHealthValue();
+                        score += foodAtHead.getScore() * getScoreMultiplier();
+                    } else {
+                        BOMB_POWER_UP_EVENT.start(frames);
+                        bombRadius.setCenterX(GameLoop.WALL_WIDTH
+                                + p.x() * Sprite.TILE_WIDTH_ACTUAL + Sprite.TILE_WIDTH_ACTUAL / 2);
+                        bombRadius.setCenterY(GameLoop.WALL_WIDTH
+                                + p.y() * Sprite.TILE_WIDTH_ACTUAL + Sprite.TILE_WIDTH_ACTUAL / 2);
+                        bombRadius.setRadius(INITIAL_BOMB_RADIUS);
+                        System.out.println("CENTERX: " + bombRadius.getCenterX());
+                        System.out.println("CENTERY: " + bombRadius.getCenterY());
+                    }
             }
+            Audio.POWER_UP_SOUND.play();
         } else {
             score += foodAtHead.getScore() * getScoreMultiplier();
         }
     }
 
-    private void markSurroundingFoodForSuck() {
-        PointInt headPos = snake.getHead().getPos();
-        PointInt topLeft = new PointInt(Math.max(headPos.x() - 1, 0),
-                Math.max(headPos.y() - 1, 0));
-        PointInt bottomRight = new PointInt(Math.min(headPos.x() + 1,
-                width - 1),
-                Math.min(headPos.y() + 1, height - 1));
-        for (int i = topLeft.y(); i <= bottomRight.y(); i++) {
-            for (int j = topLeft.x(); j <= bottomRight.x(); j++) {
-                if (i == headPos.y() && j == headPos.x()) {
-                    continue;
-                }
-                if (food[i][j] != null) {
-                    magnetizedFoodTimestamps[i][j] = frames;
+    private void markFoodForAttract() {
+        for (PointInt pos : snake.getPoints()) {
+            PointInt topLeft = new PointInt(Math.max(pos.x() - 1, 0),
+                    Math.max(pos.y() - 1, 0));
+            PointInt bottomRight = new PointInt(Math.min(pos.x() + 1,
+                    width - 1),
+                    Math.min(pos.y() + 1, height - 1));
+            for (int i = topLeft.y(); i <= bottomRight.y(); i++) {
+                for (int j = topLeft.x(); j <= bottomRight.x(); j++) {
+                    if (snake.containsPoint(new PointInt(j, i))) {
+                        continue;
+                    }
+                    if (food[i][j] != null) {
+                        magnetizedFoodTimestamps[i][j] = frames;
+                    }
                 }
             }
         }
@@ -350,6 +383,9 @@ public class GameState {
                 // check all sucked fruits
                 for (int i = 0; i < height; i++) {
                     for (int j = 0; j < width; j++) {
+                        // TODO: maybe send a boolean flag from gameloop to
+                        //  gamestate telling whether food is still being
+                        //  attracted
                         if (updateCount - magnetizedFoodTimestamps[i][j] == 60
                                 || (MAGNETIZED_POWER_UP_EVENT.framesPassed(frames) == 299 && magnetizedFoodTimestamps[i][j] > 0)) {
                             magnetizedFoodTimestamps[i][j] = 0;
@@ -360,6 +396,10 @@ public class GameState {
                         }
                     }
                 }
+            }
+            if (BOMB_POWER_UP_EVENT.inProgress(updateCount)) {
+                double radius = bombRadius.getRadius();
+                bombRadius.setRadius(radius + BOMB_POWER_UP_EVENT.progress(updateCount) * 30);
             }
             // TODO: unexpected behavior if game state update fps is not
             //  divisible by snake speed
@@ -374,6 +414,23 @@ public class GameState {
             Iterator<SpinBlade> it = blades.iterator();
             while (it.hasNext()) {
                 SpinBlade sb = it.next();
+                // TODO: need to write custom contains method
+                double xDist =
+                        bombRadius.getCenterX() - sb.getPos().x() * Sprite.TILE_WIDTH_ACTUAL - Sprite.TILE_WIDTH_ACTUAL;
+                double yDist =
+                        bombRadius.getCenterY() - sb.getPos().y() * Sprite.TILE_WIDTH_ACTUAL - Sprite.TILE_WIDTH_ACTUAL;
+                if (BOMB_POWER_UP_EVENT.inProgress(frames)
+                        && Math.pow(xDist, 2) + Math.pow(yDist, 2) < Math.pow(bombRadius.getRadius(), 2) && !sb.isExploding()) {
+                    sb.makeExplode();
+                }
+                if (sb.containsAnyPoint(snake.getPoints())
+                        && !sb.isExploding()) {
+                    if (INVINCIBLE_POWER_UP_EVENT.inProgress(frames)) {
+                        makeBladeExplode(sb);
+                    } else if (!INVULNERABLE_EVENT.inProgress(frames)) {
+                        takeDamage();
+                    }
+                }
                 if (sb.isExploding()) {
                     if (sb.getParticles().isMoving()) {
                         sb.getParticles().updatePos(1);
@@ -388,7 +445,6 @@ public class GameState {
                     if (sb.isMoving()) {
                         sb.move();
                     }
-                    PointDouble p = sb.getPos();
                     // remove from deque if spin-blade is out of bounds
                     if (sb.getBladePath().size() == 0) {
                         it.remove();
@@ -399,8 +455,14 @@ public class GameState {
 
             // TODO: consolidate into collisions method
             for (SpinBlade sb : blades) {
-                if (sb.containsAnyPoint(snake.getPoints()) && !sb.isExploding()) {
-                    takeDamage();
+                if (sb.containsAnyPoint(snake.getPoints())
+                        && !sb.isExploding()) {
+                    if (INVINCIBLE_POWER_UP_EVENT.inProgress(frames)) {
+                        makeBladeExplode(sb);
+                    }
+                    if (!INVULNERABLE_EVENT.inProgress(frames)) {
+                        takeDamage();
+                    }
                 }
             }
             spawnBlades();
@@ -461,12 +523,12 @@ public class GameState {
     }
 
     public void makeBladeExplode(SpinBlade blade) {
-        blade.setParticles();
+        blade.makeExplode();
     }
 
     public void makeBladesExplode() {
         for (SpinBlade blade : blades) {
-            blade.setParticles();
+            blade.makeExplode();
             makeBladeExplode(blade);
         }
     }
@@ -569,9 +631,6 @@ public class GameState {
     }
 
     private void takeDamage() {
-        if (INVULNERABLE_EVENT.inProgress(frames)) {
-            return;
-        }
         // TODO: play sound for shield
         if (shields > 0) {
             shields--;
@@ -593,5 +652,16 @@ public class GameState {
             }
         }
         return false;
+    }
+
+    public Circle getBombRadius() {
+        if (!BOMB_POWER_UP_EVENT.inProgress(frames)) {
+            throw new IllegalStateException();
+        }
+        return bombRadius;
+    }
+
+    public int shieldCount() {
+        return shields;
     }
 }

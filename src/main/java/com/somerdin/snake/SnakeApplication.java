@@ -4,7 +4,6 @@ import javafx.application.Application;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.layout.Pane;
-import javafx.scene.text.Font;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -20,6 +19,7 @@ public class SnakeApplication extends Application {
 
         stage.setTitle("SnakeFX");
         stage.setScene(scene);
+        stage.setResizable(false);
         stage.show();
     }
 

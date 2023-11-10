@@ -1,5 +1,7 @@
 package com.somerdin.snake;
 
+import com.somerdin.snake.Resource.Sprite;
+
 import java.util.Arrays;
 
 public class ParticleManager {

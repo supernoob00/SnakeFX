@@ -8,6 +8,7 @@ public class TimedEvent {
     public static final int INDEFINITE_DURATION = -1;
     public static final int INVULNERABLE_TIME = 150; // 2.5 seconds
     public static final int MAGNET_ACTIVE_TIME = 300 ;
+    public static final int BOMB_ACTIVE_TIME = 60;
     public static final int POWER_UP_ACTIVE_TIME = 300; // 5 seconds
 
     public static enum TimedEventType {
@@ -16,7 +17,7 @@ public class TimedEvent {
         INVULNERABLE(INVULNERABLE_TIME),
         MAGNETIZED_POWER_UP(MAGNET_ACTIVE_TIME),
         INVINCIBLE_POWER_UP(POWER_UP_ACTIVE_TIME),
-        BOMB_POWER_UP(INDEFINITE_DURATION),
+        BOMB_POWER_UP(BOMB_ACTIVE_TIME),
         GAME_OVER(INDEFINITE_DURATION);
 
         public final int duration;
@@ -52,5 +53,9 @@ public class TimedEvent {
 
     public void start(long frameCount) {
         timestamp = frameCount;
+    }
+
+    public double progress(long frameCount) {
+        return Math.min(1, framesPassed(frameCount) / (double) type.duration);
     }
 }

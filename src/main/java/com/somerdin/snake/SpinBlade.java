@@ -2,6 +2,7 @@ package com.somerdin.snake;
 
 import com.somerdin.snake.Point.PointDouble;
 import com.somerdin.snake.Point.PointInt;
+import com.somerdin.snake.Resource.Sprite;
 
 import java.util.Objects;
 
@@ -88,7 +89,7 @@ public class SpinBlade {
         speed = SLOW_BLADE_SPEED * 3;
     }
 
-    public void setParticles() {
+    public void makeExplode() {
         System.out.println("PARTICLES SET");
         int pixelsPerTile = Sprite.TILE_WIDTH_PIXELS * Sprite.TILE_WIDTH_PIXELS;
         particles = new ParticleManager(pixelsPerTile,

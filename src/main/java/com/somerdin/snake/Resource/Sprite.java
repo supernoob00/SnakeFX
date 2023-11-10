@@ -1,5 +1,6 @@
-package com.somerdin.snake;
+package com.somerdin.snake.Resource;
 
+import com.somerdin.snake.Direction;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -53,6 +54,8 @@ public final class Sprite {
             new ImageView(PRIMARY_SPRITE_SHEET);
     private static final ImageView BOMB_IMG =
             new ImageView(PRIMARY_SPRITE_SHEET);
+    private static final ImageView INVINCIBLE_IMG =
+            new ImageView(PRIMARY_SPRITE_SHEET);
     private static final ImageView CRUMB_IMG_1 =
             new ImageView(PRIMARY_SPRITE_SHEET);
     private static final ImageView CRUMB_IMG_2 =
@@ -86,6 +89,7 @@ public final class Sprite {
         CHERRY_IMG.setViewport(getViewport(6, 3, TILE_WIDTH_ACTUAL));
         COOKIE_IMG.setViewport(getViewport(7, 3, TILE_WIDTH_ACTUAL));
         SHIELD_IMG.setViewport(getViewport(0, 0, TILE_WIDTH_ACTUAL));
+        INVINCIBLE_IMG.setViewport(getViewport(0, 0, TILE_WIDTH_ACTUAL));
         MAGNET_IMG.setViewport(getViewport(0, 0, TILE_WIDTH_ACTUAL));
         BOMB_IMG.setViewport(getViewport(0, 0, TILE_WIDTH_ACTUAL));
         CRUMB_IMG_1.setViewport(getViewport(7, 5, TILE_WIDTH_ACTUAL));
@@ -107,11 +111,25 @@ public final class Sprite {
             new Sprite(Sprite.SNAKE_HEAD_IMG);
     public static final Sprite SNAKE_BODY =
             new Sprite(Sprite.SNAKE_BODY_IMG);
+    public static final Sprite SNAKE_HEAD_ONE_SHIELD =
+            new Sprite(Sprite.SNAKE_HEAD_IMG);
+    public static final Sprite SNAKE_BODY_ONE_SHIELD =
+            new Sprite(Sprite.SNAKE_BODY_IMG);
+    public static final Sprite SNAKE_BODY_TWO_SHIELD =
+            new Sprite(Sprite.SNAKE_BODY_IMG);
+    public static final Sprite SNAKE_HEAD_TWO_SHIELD =
+            new Sprite(Sprite.SNAKE_HEAD_IMG);
+    public static final Sprite SNAKE_BODY_THREE_SHIELD =
+            new Sprite(Sprite.SNAKE_BODY_IMG);
+    public static final Sprite SNAKE_HEAD_THREE_SHIELD =
+            new Sprite(Sprite.SNAKE_HEAD_IMG);
     public static final Sprite APPLE = new Sprite(Sprite.RED_APPLE_IMG);
     public static final Sprite CHERRY = new Sprite(Sprite.CHERRY_IMG);
     public static final Sprite COOKIE = new Sprite(Sprite.COOKIE_IMG);
     public static final Sprite SHIELD = new Sprite(Sprite.SHIELD_IMG);
     public static final Sprite MAGNET = new Sprite(Sprite.MAGNET_IMG);
+    public static final Sprite INVINCIBILITY =
+            new Sprite(Sprite.INVINCIBLE_IMG);
     public static final Sprite BOMB = new Sprite(Sprite.BOMB_IMG);
     public static final Sprite WALL = new Sprite(Sprite.WALL_IMG);
     public static final Sprite WALL_CORNER = new Sprite(Sprite.WALL_CORNER_IMG);

@@ -1,5 +1,6 @@
 package com.somerdin.snake;
 
+import com.somerdin.snake.Resource.Font;
 import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;

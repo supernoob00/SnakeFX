@@ -2,12 +2,16 @@ package com.somerdin.snake;
 
 import com.somerdin.snake.Point.PointDouble;
 import com.somerdin.snake.Point.PointInt;
+import com.somerdin.snake.Resource.Audio;
+import com.somerdin.snake.Resource.Font;
+import com.somerdin.snake.Resource.Sprite;
 import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import javafx.scene.text.Text;
 import javafx.scene.transform.Rotate;
 import javafx.util.Duration;
@@ -32,6 +36,11 @@ public class GameLoop {
     public static final Color GAME_INFO_BACKGROUND = Color.BLACK;
     public static final Color GAME_INFO_TEXT_COLOR = Color.WHITE;
     public static final Color CHECKERBOARD_LIGHT_COLOR = Color.web("#1919a6");
+
+    public static final Color BOMB_RADIUS_START_COLOR = Color.rgb(255,255,204
+            , 0.9);
+    public static final Color BOMB_RADIUS_END_COLOR = Color.rgb(255, 255, 255
+            , 0.2);
 
     public static final int DRAW_UPDATE_FPS = 60;
 
@@ -170,6 +179,16 @@ public class GameLoop {
                 drawSnake();
             }
         }
+        if (gameState.BOMB_POWER_UP_EVENT.inProgress(frameCount)) {
+            Color current =
+                    BOMB_RADIUS_START_COLOR.interpolate(BOMB_RADIUS_END_COLOR,
+                            gameState.BOMB_POWER_UP_EVENT.progress(frameCount));
+            Circle bombRadius = gameState.getBombRadius();
+            g.setFill(current);
+            g.fillOval(bombRadius.getCenterX() - bombRadius.getRadius(),
+                    bombRadius.getCenterY() - bombRadius.getRadius(),
+                    bombRadius.getRadius() * 2, bombRadius.getRadius() * 2);
+        }
         drawWalls();
         drawGameInfo();
         if (gameState.isGameOver()) {
@@ -182,6 +201,7 @@ public class GameLoop {
     }
 
     private void drawSnake() {
+        Sprite toDraw = null;
         Snake snake = gameState.getSnake();
         boolean headDrawn = false;
         for (SnakeCell sc : snake.getBody()) {
@@ -197,12 +217,25 @@ public class GameLoop {
                     sc.getNextPos().y() * cellLength,
                     frameCount % snake.speed() / (double) snake.speed());
             if (!headDrawn) {
-                Sprite.SNAKE_HEAD.setOrientation(sc.getDir());
-                drawSpriteToGameBounds(Sprite.SNAKE_HEAD, x, y);
+                toDraw = switch (gameState.shieldCount()) {
+                    case 0 -> Sprite.SNAKE_HEAD;
+                    case 1 -> Sprite.SNAKE_HEAD_ONE_SHIELD;
+                    case 2 -> Sprite.SNAKE_HEAD_TWO_SHIELD;
+                    case 3 -> Sprite.SNAKE_HEAD_THREE_SHIELD;
+                    default -> throw new IllegalStateException("Unexpected value: " + gameState.shieldCount());
+                };
                 headDrawn = true;
             } else {
-                drawSpriteToGameBounds(Sprite.SNAKE_BODY, x, y);
+                toDraw = switch (gameState.shieldCount()) {
+                    case 0 -> Sprite.SNAKE_BODY;
+                    case 1 -> Sprite.SNAKE_BODY_ONE_SHIELD;
+                    case 2 -> Sprite.SNAKE_BODY_TWO_SHIELD;
+                    case 3 -> Sprite.SNAKE_BODY_THREE_SHIELD;
+                    default -> throw new IllegalStateException("Unexpected value: " + gameState.shieldCount());
+                };
             }
+            toDraw.setOrientation(sc.getDir());
+            drawSpriteToGameBounds(toDraw, x, y);
         }
     }
 
@@ -296,7 +329,6 @@ public class GameLoop {
 
                 double displayY = y * cellLength;
                 double displayX = x * cellLength;
-                System.out.println("DISPLAYX: " + displayX + " Y: " + displayY);
 
                 long suckTimestamp = gameState.magnetizedFoodTimestamps[y][x];
                 if (suckTimestamp != 0) {
@@ -329,6 +361,11 @@ public class GameLoop {
                                     displayX, displayY);
                     case COOKIE -> drawSpriteToGameBounds(Sprite.COOKIE, displayX, displayY);
                     case MAGNET -> drawSpriteToGameBounds(Sprite.MAGNET, displayX, displayY);
+                    case INVINCIBLE -> drawSpriteToGameBounds(Sprite.INVINCIBILITY, displayX, displayY);
+                    case SHIELD -> drawSpriteToGameBounds(Sprite.SHIELD,
+                            displayX, displayY);
+                    case BOMB -> drawSpriteToGameBounds(Sprite.BOMB, displayX
+                            , displayY);
                     case CRUMB_1, CRUMB_2, CRUMB_3, CRUMB_4 ->
                             drawSpriteToGameBounds(Sprite.getCrumbById(food.getColorId()), displayX,
                                     displayY);
