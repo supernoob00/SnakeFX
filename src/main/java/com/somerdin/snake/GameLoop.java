@@ -70,8 +70,6 @@ public class GameLoop {
 
     private long newStageTimestamp;
 
-    private PointDouble[][] suckedFoodPositions;
-
     public GameLoop(Canvas canvas) {
         gameState = new GameState(GameState.HEIGHT, GameState.WIDTH);
         this.canvas = canvas;
@@ -131,8 +129,6 @@ public class GameLoop {
             mediaPlayer.seek(Duration.ZERO);
             mediaPlayer.play();
         });
-        suckedFoodPositions =
-                new PointDouble[gameState.height][gameState.width];
     }
 
     public void start() {
@@ -206,15 +202,30 @@ public class GameLoop {
         Snake snake = gameState.getSnake();
         boolean headDrawn = false;
 
-        int i = 0;
+        int switchVal = -1;
+        if (gameState.INVINCIBLE_POWER_UP_EVENT.inProgress(frameCount)) {
+            int cycle =
+                    gameState.INVINCIBLE_POWER_UP_EVENT.framesPassed(frameCount) < 240 ? 28 : 12;
+            int num =
+                    (int) (gameState.INVINCIBLE_POWER_UP_EVENT.framesPassed(frameCount) % cycle);
+            for (int i = 0; i < 4; i++) {
+                if (num < (i + 1) * cycle / 4) {
+                    switchVal = i;
+                    break;
+                }
+            }
+        } else {
+            switchVal = 0;
+        }
         for (SnakeCell sc : snake.getBody()) {
             if (sc.isCorner()) {
-                toDraw = switch (gameState.shieldCount()) {
+                toDraw = switch (switchVal) {
                     case 0 -> Sprite.SNAKE_BODY;
                     case 1 -> Sprite.SNAKE_BODY_ONE_SHIELD;
                     case 2 -> Sprite.SNAKE_BODY_TWO_SHIELD;
                     case 3 -> Sprite.SNAKE_BODY_THREE_SHIELD;
-                    default -> throw new IllegalStateException("Unexpected value: " + gameState.shieldCount());
+                    default -> throw new IllegalStateException("Unexpected " +
+                            "value: " + switchVal);
                 };
                 drawSpriteToGameBounds(toDraw,
                         sc.getPos().x() * cellLength,
@@ -226,52 +237,39 @@ public class GameLoop {
             double y = interpolate(sc.getPos().y() * cellLength,
                     sc.getNextPos().y() * cellLength,
                     frameCount % snake.speed() / (double) snake.speed());
+
             if (!headDrawn) {
-                toDraw = switch (gameState.shieldCount()) {
+                toDraw = switch (switchVal) {
                     case 0 -> Sprite.SNAKE_HEAD;
                     case 1 -> Sprite.SNAKE_HEAD_ONE_SHIELD;
                     case 2 -> Sprite.SNAKE_HEAD_TWO_SHIELD;
                     case 3 -> Sprite.SNAKE_HEAD_THREE_SHIELD;
-                    default -> throw new IllegalStateException("Unexpected value: " + gameState.shieldCount());
+                    default -> throw new IllegalStateException("Unexpected " +
+                            "value: " + switchVal);
                 };
                 headDrawn = true;
             } else {
-                toDraw = switch (gameState.shieldCount()) {
+                toDraw = switch (switchVal) {
                     case 0 -> Sprite.SNAKE_BODY;
                     case 1 -> Sprite.SNAKE_BODY_ONE_SHIELD;
                     case 2 -> Sprite.SNAKE_BODY_TWO_SHIELD;
                     case 3 -> Sprite.SNAKE_BODY_THREE_SHIELD;
-                    default -> throw new IllegalStateException("Unexpected value: " + gameState.shieldCount());
+                    default -> throw new IllegalStateException("Unexpected " +
+                            "value: " + switchVal);
                 };
             }
-            System.out.println("SHIELD COUNT: " + gameState.shieldCount());
-            if (gameState.INVINCIBLE_POWER_UP_EVENT.inProgress(frameCount)) {
-                // TODO: figure out how to add invincible effect
-                if (i / 10 == frameCount % gameState.getSnake().getLength()) {
-                    ColorAdjust monochrome = new ColorAdjust();
-                    monochrome.setSaturation(-1.0);
-                    Effect effect = new Blend(BlendMode.MULTIPLY, monochrome,
-                            new ColorInput(
-                                    0,
-                                    0,
-                                    Sprite.TILE_WIDTH_ACTUAL,
-                                    Sprite.TILE_WIDTH_ACTUAL,
-                                    Color.RED
-                            ));
-                    g.save();
-                    g.setEffect(effect);
-                }
-            }
+            System.out.println("SHIELD COUNT: " + switchVal);
             toDraw.setOrientation(sc.getDir());
             drawSpriteToGameBounds(toDraw, x, y);
-            g.restore();
-            i++;
         }
     }
 
     private void drawPaths() {
         g.setGlobalAlpha(0.8);
         for (SpinBlade sb : gameState.getBlades()) {
+            if (sb.isExploding()) {
+                continue;
+            }
             BladePath bladePath = sb.getBladePath();
             PointInt current = bladePath.getStart();
             Iterator<Direction> it = bladePath.getPath().iterator();
@@ -350,55 +348,31 @@ public class GameLoop {
         PointInt snakeHeadPoint = gameState.getSnake().getHead().getPos();
         double snakeHeadX = snakeHeadPoint.x() * cellLength;
         double snakeHeadY = snakeHeadPoint.y() * cellLength;
+
         for (int y = 0; y < gameState.height; y++) {
             for (int x = 0; x < gameState.width; x++) {
                 Item food = gameState.getFood(new PointInt(x ,y));
                 if (food == null) {
                     continue;
                 }
-
                 double displayY = y * cellLength;
                 double displayX = x * cellLength;
-
-                long suckTimestamp = gameState.magnetizedFoodTimestamps[y][x];
-                if (suckTimestamp != 0) {
-                    if (suckedFoodPositions[y][x] == null) {
-                        suckedFoodPositions[y][x] = new PointDouble(displayX,
-                                displayY);
-                    }
-                    // frames to suck: 30
-                    double factor = ((frameCount - suckTimestamp) / 60D);
-                    displayX = interpolate(suckedFoodPositions[y][x].x(),
-                            snakeHeadX,
-                            factor);
-                    displayY = interpolate(suckedFoodPositions[y][x].y(),
-                            snakeHeadY,
-                            factor);
-                    suckedFoodPositions[y][x] = new PointDouble(displayX,
-                            displayY);
-                    if (frameCount - suckTimestamp == 60) {
-                        gameState.magnetizedFoodTimestamps[y][x] = 0;
-                    }
-                    System.out.println("FACTOR: " + factor);
-                    System.out.println(suckedFoodPositions[y][x]);
-                    System.out.println("X: " + displayX + " Y: " + displayY);
-                }
+                Sprite toDraw = null;
                 switch (food.getFood()) {
-                    case RED_APPLE ->
-                            drawSpriteToGameBounds(Sprite.APPLE, displayX, displayY);
-                    case CHERRY ->
-                            drawSpriteToGameBounds(Sprite.CHERRY,
-                                    displayX, displayY);
-                    case COOKIE -> drawSpriteToGameBounds(Sprite.COOKIE, displayX, displayY);
-                    case MAGNET -> drawSpriteToGameBounds(Sprite.MAGNET, displayX, displayY);
-                    case INVINCIBLE -> drawSpriteToGameBounds(Sprite.INVINCIBILITY, displayX, displayY);
-                    case SHIELD -> drawSpriteToGameBounds(Sprite.SHIELD,
-                            displayX, displayY);
-                    case BOMB -> drawSpriteToGameBounds(Sprite.BOMB, displayX
-                            , displayY);
-                    case CRUMB_1, CRUMB_2, CRUMB_3, CRUMB_4 ->
-                            drawSpriteToGameBounds(Sprite.getCrumbById(food.getColorId()), displayX,
-                                    displayY);
+                    case RED_APPLE -> toDraw = Sprite.APPLE;
+                    case CHERRY -> toDraw = Sprite.CHERRY;
+                    case COOKIE -> toDraw = Sprite.COOKIE;
+                    case INVINCIBLE -> toDraw = Sprite.INVINCIBILITY;
+                    case BOMB -> toDraw = Sprite.BOMB;
+                    case CRUMB_1, CRUMB_2, CRUMB_3, CRUMB_4 -> toDraw =
+                            Sprite.getCrumbById(food.getColorId());
+                }
+                long passed = food.framesPassed(frameCount);
+                if (food.isCrumb() || passed < 120) {
+                    drawSpriteToGameBounds(toDraw, displayX, displayY);
+                } else if (passed % 10 < 5) {
+                    System.out.println("HHHHHH");
+                    drawSpriteToGameBounds(toDraw, displayX, displayY);
                 }
             }
         }
@@ -417,7 +391,7 @@ public class GameLoop {
                 ParticleManager pm = blade.getParticles();
                 drawParticles(pm, 4);
             } else {
-                Sprite.SHURIKEN.rotate(5);
+                Sprite.SHURIKEN.rotate((double) 15 / gameState.getBladeCount());
                 drawSpriteToGameBounds(Sprite.SHURIKEN,
                         blade.getPos().x() * cellLength,
                         blade.getPos().y() * cellLength);
@@ -572,22 +546,27 @@ public class GameLoop {
         g.setFill(GAME_INFO_TEXT_COLOR);
         g.setFont(Font.ATARI_24);
         g.fillText("SCORE x" + gameState.getScoreMultiplier(),
-                GAME_AREA_WIDTH + 20, 50);
+                GAME_AREA_WIDTH + 20, 500);
         String score = String.format("%09d", gameState.getScore());
-        g.fillText(score, GAME_AREA_WIDTH + 20, 100);
-        g.fillText("BOOST", GAME_AREA_WIDTH + 20, 450);
-        drawBoostGauge(GAME_AREA_WIDTH + 20, 500);
+        g.fillText(score, GAME_AREA_WIDTH + 20, 550);
+        g.fillText("BOOST", GAME_AREA_WIDTH + 20, 50);
+        g.setFill(GAME_INFO_TEXT_COLOR);
+        g.fillText("HEALTH", GAME_AREA_WIDTH + 20, 140);
         drawHealth();
+        drawBoostGauge(GAME_AREA_WIDTH + 18, 70);
     }
 
     private void drawBoostGauge(double x, double y) {
-        g.setFill(GAME_INFO_TEXT_COLOR);
-        g.setLineWidth(2);
+        g.setFill(Color.WHITE);
         double outerLength = 100;
         double outerWidth = 20;
-        g.strokeRect(x, y, outerLength, outerWidth);
+        g.fillRect(x, y, outerLength, outerWidth);
 
-        g.setFill(Color.GREEN);
+        if (gameState.getSnake().getBoostGauge() < 25) {
+            g.setFill(Color.ORANGERED);
+        } else {
+            g.setFill(Color.LIMEGREEN);
+        }
         double innerLength = outerLength * 0.95;
         double innerWidth = outerWidth * 0.8;
         double percentFilled = gameState.getSnake().getBoostGauge() / 100D;
@@ -595,6 +574,11 @@ public class GameLoop {
                 y + outerWidth / 2 - innerWidth / 2,
                 innerLength * percentFilled,
                 innerWidth);
+
+        g.setStroke(Color.WHITE);
+        g.setLineWidth(2);
+        g.strokeLine(x + outerLength * 0.25, y + outerWidth / 2 - innerWidth / 2, x + outerLength * 0.25,
+                y + innerWidth + 2);
     }
 
     private void drawHealth() {
@@ -603,7 +587,7 @@ public class GameLoop {
         }
         int fullHeartCount = gameState.getHealth() / 4;
         double x = GAME_AREA_WIDTH - 5;
-        double y = 100;
+        double y = 140;
 
         for (int i = 0; i < fullHeartCount; i++) {
             drawSpriteToGameBounds(Sprite.FULL_HEART, x, y);

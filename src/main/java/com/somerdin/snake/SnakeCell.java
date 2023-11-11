@@ -2,6 +2,8 @@ package com.somerdin.snake;
 
 import com.somerdin.snake.Point.PointInt;
 
+import java.util.Objects;
+
 public class SnakeCell {
     private Direction dir;
     private PointInt position;
@@ -46,5 +48,18 @@ public class SnakeCell {
     @Override
     public String toString() {
         return "Direction: " + dir + " | Corner: " + isCorner();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SnakeCell snakeCell = (SnakeCell) o;
+        return isCorner == snakeCell.isCorner && dir == snakeCell.dir && Objects.equals(position, snakeCell.position);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(dir, position, isCorner);
     }
 }

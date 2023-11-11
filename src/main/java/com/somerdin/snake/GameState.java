@@ -19,7 +19,6 @@ public class GameState {
     public final int height;
 
     public final Item[][] food;
-    public final long[][] magnetizedFoodTimestamps;
     public int crumbCount;
 
     private final Deque<SpinBlade> blades = new ArrayDeque<>();
@@ -32,10 +31,8 @@ public class GameState {
             new TimedEvent(TimedEvent.TimedEventType.SNAKE_EXPLODE);
     public final TimedEvent INVULNERABLE_EVENT =
             new TimedEvent(TimedEvent.TimedEventType.INVULNERABLE);
-    public final TimedEvent MAGNETIZED_POWER_UP_EVENT =
-            new TimedEvent(TimedEvent.TimedEventType.MAGNETIZED_POWER_UP);
     public final TimedEvent INVINCIBLE_POWER_UP_EVENT =
-            new TimedEvent(TimedEvent.TimedEventType.MAGNETIZED_POWER_UP);
+            new TimedEvent(TimedEvent.TimedEventType.INVINCIBLE_POWER_UP);
     public final TimedEvent BOMB_POWER_UP_EVENT =
             new TimedEvent(TimedEvent.TimedEventType.BOMB_POWER_UP);
 
@@ -43,7 +40,6 @@ public class GameState {
             GAME_OVER_EVENT,
             SNAKE_EXPLODE_EVENT,
             INVULNERABLE_EVENT,
-            MAGNETIZED_POWER_UP_EVENT,
             INVINCIBLE_POWER_UP_EVENT,
             BOMB_POWER_UP_EVENT
     };
@@ -52,7 +48,6 @@ public class GameState {
 
     private final Snake snake;
     private int health = 0;
-    private int shields = 0;
 
     // particle coordinates are actual coordinates on canvas
     private ParticleManager snakeParticles;
@@ -66,17 +61,13 @@ public class GameState {
     // TODO: decide what to do about out of bounds errors
     public GameState(int height, int width) {
         this.food = new Item[height][width];
-        this.magnetizedFoodTimestamps = new long[height][width];
         this.crumbCount = 0;
         this.width = width;
         this.height = height;
-
         snake = new Snake(new SnakeCell(Direction.RIGHT, new PointInt(14, 12),
                 false));
         setInitialCrumbPattern();
         spawnBlade();
-        placeFood(new PointInt(0, 0), new Item(Food.MAGNET, frames));
-        placeFood(new PointInt(6, 6), new Item(Food.BOMB, frames));
     }
 
     public Snake getSnake() {
@@ -102,6 +93,7 @@ public class GameState {
         this.food[p.y()][p.x()] = null;
         if (food != null && food.isCrumb()) {
             crumbCount--;
+            // TODO: what to do if all crumbs eaten
             if (crumbCount == 0) {
                 stage++;
                 makeBladesExplode();
@@ -165,63 +157,45 @@ public class GameState {
         if (foodAtHead != null) {
             eatFood(snake.getHead().getPos());
         }
-
-        // mark all surrounding food for suck if magnetized
-        if (MAGNETIZED_POWER_UP_EVENT.inProgress(frames)) {
-            markFoodForAttract();
-        }
     }
 
     private void eatFood(PointInt p) {
         Item foodAtHead = getFood(p);
         removeFood(p);
-        if (foodAtHead.isFruit()) {
+        if (!foodAtHead.isCrumb()) {
             spawnFruit();
+        }
+        if (foodAtHead.isFruit()) {
             snake.grow();
+            if (snake.getLength() > 7 && stage == 1) {
+                stage++;
+            } else if (snake.getLength() > 14 && stage == 2) {
+                stage++;
+            } else if (snake.getLength() > 20 && stage == 3) {
+                stage++;
+            } else if (snake.getLength() > 26 && stage == 4) {
+                stage++;
+            } else if (snake.getLength() > 29 && stage == 5) {
+                stage++;
+            }
+
             health += foodAtHead.getHealthValue();
             score += foodAtHead.getScore() * getScoreMultiplier();
             Audio.EAT_FRUIT_SOUND.play();
         } else if (foodAtHead.isPowerUp()) {
             switch (foodAtHead.getFood()) {
-                case SHIELD:
-                    if (shields == 3) {
-                        health += foodAtHead.getHealthValue();
-                        score += foodAtHead.getScore() * getScoreMultiplier();
-                    } else {
-                        shields++;
-                    }
-                    break;
-                case MAGNET:
-                    if (MAGNETIZED_POWER_UP_EVENT.inProgress(frames)) {
-                        health += foodAtHead.getHealthValue();
-                        score += foodAtHead.getScore() * getScoreMultiplier();
-                    } else {
-                        System.out.println("MAGNETIZED");
-                        MAGNETIZED_POWER_UP_EVENT.start(frames);
-                    }
-                    break;
                 case INVINCIBLE:
-                    if (INVINCIBLE_POWER_UP_EVENT.inProgress(frames)) {
-                        health += foodAtHead.getHealthValue();
-                        score += foodAtHead.getScore() * getScoreMultiplier();
-                    } else {
-                        INVINCIBLE_POWER_UP_EVENT.start(frames);
-                    }
+                    INVINCIBLE_POWER_UP_EVENT.start(frames);
                     break;
                 case BOMB:
-                    if (BOMB_POWER_UP_EVENT.inProgress(frames)) {
-                        health += foodAtHead.getHealthValue();
-                        score += foodAtHead.getScore() * getScoreMultiplier();
-                    } else {
-                        BOMB_POWER_UP_EVENT.start(frames);
-                        bombRadius.setCenterX(GameLoop.WALL_WIDTH
-                                + p.x() * Sprite.TILE_WIDTH_ACTUAL + Sprite.TILE_WIDTH_ACTUAL / 2);
-                        bombRadius.setCenterY(GameLoop.WALL_WIDTH
-                                + p.y() * Sprite.TILE_WIDTH_ACTUAL + Sprite.TILE_WIDTH_ACTUAL / 2);
-                        bombRadius.setRadius(INITIAL_BOMB_RADIUS);
-                        System.out.println("CENTERX: " + bombRadius.getCenterX());
-                        System.out.println("CENTERY: " + bombRadius.getCenterY());
-                    }
+                    BOMB_POWER_UP_EVENT.start(frames);
+                    bombRadius.setCenterX(GameLoop.WALL_WIDTH
+                            + p.x() * Sprite.TILE_WIDTH_ACTUAL + Sprite.TILE_WIDTH_ACTUAL / 2);
+                    bombRadius.setCenterY(GameLoop.WALL_WIDTH
+                            + p.y() * Sprite.TILE_WIDTH_ACTUAL + Sprite.TILE_WIDTH_ACTUAL / 2);
+                    bombRadius.setRadius(INITIAL_BOMB_RADIUS);
+                    Audio.BOMB_SOUND.play();
+                    break;
             }
             Audio.POWER_UP_SOUND.play();
         } else {
@@ -230,20 +204,16 @@ public class GameState {
     }
 
     private void markFoodForAttract() {
-        for (PointInt pos : snake.getPoints()) {
-            PointInt topLeft = new PointInt(Math.max(pos.x() - 1, 0),
-                    Math.max(pos.y() - 1, 0));
-            PointInt bottomRight = new PointInt(Math.min(pos.x() + 1,
-                    width - 1),
-                    Math.min(pos.y() + 1, height - 1));
-            for (int i = topLeft.y(); i <= bottomRight.y(); i++) {
-                for (int j = topLeft.x(); j <= bottomRight.x(); j++) {
-                    if (snake.containsPoint(new PointInt(j, i))) {
-                        continue;
-                    }
-                    if (food[i][j] != null) {
-                        magnetizedFoodTimestamps[i][j] = frames;
-                    }
+        PointInt pos = snake.getHead().getPos();
+        PointInt topLeft = new PointInt(Math.max(pos.x() - 1, 0),
+                Math.max(pos.y() - 1, 0));
+        PointInt bottomRight = new PointInt(Math.min(pos.x() + 1,
+                width - 1),
+                Math.min(pos.y() + 1, height - 1));
+        for (int i = topLeft.y(); i <= bottomRight.y(); i++) {
+            for (int j = topLeft.x(); j <= bottomRight.x(); j++) {
+                if (snake.containsPoint(new PointInt(j, i))) {
+                    continue;
                 }
             }
         }
@@ -259,61 +229,30 @@ public class GameState {
             random = getRandomPoint();
             existing = getFood(random);
         }
-        Food foodToPlace;
-        // player should have better spawn rates for better fruit the longer
-        // they are
-        // TODO: adjust fruit spawn rates
-        double typeOfFruitProbability = Math.random();
-        double chance;
-        switch (stage) {
-            case 1:
-                chance = 1 - (snake.getLength() - snake.INITIAL_SIZE) * 0.025;
-                if (chance < 0.6) {
-                    chance = 0.6;
-                }
-                if (typeOfFruitProbability < chance) {
-                    foodToPlace = Food.RED_APPLE;
-                } else {
-                    foodToPlace = Food.CHERRY;
-                }
+
+        Food foodToPlace = null;
+        // base probabilities:
+        // APPLE: 0.50
+        // CHERRY: 0.20
+        // COOKIE: 0.15
+
+        // INVINCIBILITY: 0.10
+        // BOMB: 0.05
+        double rand = Math.random();
+        double[] probabilities = new double[] {0.5, 0.7, 0.85, 0.95, 1.0};
+        for (int i = 0; i < probabilities.length; i++) {
+            if (rand < probabilities[i]) {
+                foodToPlace = switch (i) {
+                    case 0 -> Food.RED_APPLE;
+                    case 1 -> Food.CHERRY;
+                    case 2 -> Food.COOKIE;
+                    case 3 -> Food.INVINCIBLE;
+                    case 4 -> Food.BOMB;
+                    default ->
+                            throw new IllegalStateException("Unexpected value: " + i);
+                };
                 break;
-            case 2:
-                chance = 1 - (snake.getLength() - Snake.INITIAL_SIZE) * 0.025;
-                if (chance < 0.3) {
-                    chance = 0.3;
-                }
-                if (typeOfFruitProbability < chance) {
-                    foodToPlace = Food.RED_APPLE;
-                } else {
-                    foodToPlace = Food.CHERRY;
-                }
-                break;
-            case 3:
-                chance = 1 - (snake.getLength() - Snake.INITIAL_SIZE) * 0.025;
-                if (chance < 0.3) {
-                    chance = 0.3;
-                }
-                if (typeOfFruitProbability < chance) {
-                    foodToPlace = Food.RED_APPLE;
-                } else if (typeOfFruitProbability < chance + (1 - chance)* 0.8) {
-                    foodToPlace = Food.CHERRY;
-                } else {
-                    foodToPlace = Food.COOKIE;
-                }
-                break;
-            default:
-                chance = 1 - (snake.getLength() - Snake.INITIAL_SIZE) * 0.025;
-                if (chance < 0.2) {
-                    chance = 0.2;
-                }
-                if (typeOfFruitProbability < chance) {
-                    foodToPlace = Food.RED_APPLE;
-                } else if (typeOfFruitProbability < chance + (1 - chance)* 0.8) {
-                    foodToPlace = Food.CHERRY;
-                } else {
-                    foodToPlace = Food.COOKIE;
-                }
-                break;
+            }
         }
         placeFood(random, new Item(foodToPlace, frames));
     }
@@ -357,11 +296,11 @@ public class GameState {
         }
         int bladeCount = switch (stage) {
             case 1 -> 3;
-            case 2 -> 4;
-            case 3 -> 5;
-            case 4 -> 8;
-            case 5 -> 12;
-            default -> 15;
+            case 2 -> 6;
+            case 3 -> 9;
+            case 4 -> 12;
+            case 5 -> 15;
+            default -> 18;
         };
         while (blades.size() < bladeCount) {
             spawnBlade();
@@ -370,6 +309,15 @@ public class GameState {
 
     public void update(long updateCount) {
         frames = updateCount;
+        for (int i = 0; i < height; i++) {
+            for (int j = 0; j < width; j++) {
+                Item item = food[i][j];
+                if (item != null && item.expired(updateCount)) {
+                    removeFood(new PointInt(j, i));
+                    spawnFruit();
+                }
+            }
+        }
         if (SNAKE_EXPLODE_EVENT.inProgress(updateCount)) {
             if (snakeParticles.isMoving()) {
                 snakeParticles.updatePos(1);
@@ -378,24 +326,6 @@ public class GameState {
                  GAME_OVER_EVENT.start(updateCount);
             }
         } else {
-            if (MAGNETIZED_POWER_UP_EVENT.inProgress(updateCount)) {
-                // check all sucked fruits
-                for (int i = 0; i < height; i++) {
-                    for (int j = 0; j < width; j++) {
-                        // TODO: maybe send a boolean flag from gameloop to
-                        //  gamestate telling whether food is still being
-                        //  attracted
-                        if (updateCount - magnetizedFoodTimestamps[i][j] == 60
-                                || (MAGNETIZED_POWER_UP_EVENT.framesPassed(frames) == 299 && magnetizedFoodTimestamps[i][j] > 0)) {
-                            magnetizedFoodTimestamps[i][j] = 0;
-                            PointInt p = new PointInt(j, i);
-                            if (getFood(p) != null) {
-                                eatFood(new PointInt(j, i));
-                            }
-                        }
-                    }
-                }
-            }
             if (BOMB_POWER_UP_EVENT.inProgress(updateCount)) {
                 double radius = bombRadius.getRadius();
                 bombRadius.setRadius(radius + BOMB_POWER_UP_EVENT.progress(updateCount) * 30);
@@ -592,6 +522,7 @@ public class GameState {
             for (int j = 1; j < height; j += 2) {
                 PointInt p = new PointInt(j, i);
                 crumbsToDraw.add(p);
+                // magnetizedFoodTimestamps[i][j] = 0;
             }
         }
         for (int i = 1; i < cells.length - 1; i++) {
@@ -630,13 +561,9 @@ public class GameState {
     }
 
     private void takeDamage() {
-        // TODO: play sound for shield
-        if (shields > 0) {
-            shields--;
-        } else {
-            health -= 4;
-            snake.resetLength(Snake.INITIAL_SIZE);
-        }
+        health -= 4;
+        snake.resetLength(Math.max(snake.getLength() - 3,
+                Snake.INITIAL_SIZE));
         if (health < 0) {
             makeSnakeExplode();
         } else {
@@ -660,7 +587,7 @@ public class GameState {
         return bombRadius;
     }
 
-    public int shieldCount() {
-        return shields;
+    public int getBladeCount() {
+        return blades.size();
     }
 }

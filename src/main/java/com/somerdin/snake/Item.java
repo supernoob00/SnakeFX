@@ -36,4 +36,15 @@ public class Item {
     public int getColorId() {
         return food.getColorId();
     }
+
+    public long framesPassed(long current) {
+        return current - createTimestamp;
+    }
+
+    public boolean expired(long current) {
+        if (food.isCrumb()) {
+            return false;
+        }
+        return current - createTimestamp >= food.getFrames();
+    }
 }

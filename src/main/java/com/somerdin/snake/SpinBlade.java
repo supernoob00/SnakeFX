@@ -2,6 +2,7 @@ package com.somerdin.snake;
 
 import com.somerdin.snake.Point.PointDouble;
 import com.somerdin.snake.Point.PointInt;
+import com.somerdin.snake.Resource.Audio;
 import com.somerdin.snake.Resource.Sprite;
 
 import java.util.Objects;
@@ -130,6 +131,7 @@ public class SpinBlade {
                 particles.ySpeed[id] =
                         4 * calcYSpeed * (Math.random() * 0.5 + 0.5);
             }
+        Audio.BLADE_EXPLODE_SOUND.play();
     }
 
     public boolean isExploding() {

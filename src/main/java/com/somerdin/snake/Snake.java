@@ -115,11 +115,13 @@ public class Snake implements Mover {
          // conditions if snake is currently boosted
          else {
              // snake just ran out of boost juice
-             if (boostGauge == 0) {
-                 if (boostGauge < 25) {
-                     resetCooldown();
+             if (boostGauge < 25) {
+                 resetCooldown();
+                 if (boostGauge <= BOOST_GAUGE_USAGE) {
+                     slowDown();
+                 } else {
+                     boostGauge -= BOOST_GAUGE_USAGE;
                  }
-                 slowDown();
              }
              // snake still has boost juice
              else {
@@ -173,7 +175,7 @@ public class Snake implements Mover {
     }
 
     public boolean canBoost() {
-        return boostGauge >= BOOST_GAUGE_USAGE && boostCooldown == 0;
+        return boostGauge > 25 && boostCooldown == 0;
     }
 
     public void resetLength(int length) {
