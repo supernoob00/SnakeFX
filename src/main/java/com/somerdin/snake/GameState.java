@@ -57,8 +57,12 @@ public class GameState {
     private long score = 0;
     private int stage = 1;
     private long frames = 0;
+    private int crumbClearCount = 0;
 
-    // TODO: decide what to do about out of bounds errors
+    private static long getSecondsFromFrames(long frames) {
+        return frames / 60;
+    }
+
     public GameState(int height, int width) {
         this.food = new Item[height][width];
         this.crumbCount = 0;
@@ -93,11 +97,21 @@ public class GameState {
         this.food[p.y()][p.x()] = null;
         if (food != null && food.isCrumb()) {
             crumbCount--;
-            // TODO: what to do if all crumbs eaten
             if (crumbCount == 0) {
                 stage++;
+                crumbClearCount++;
                 makeBladesExplode();
                 setInitialCrumbPattern();
+
+                score += switch (crumbClearCount) {
+                    case 1 -> 50_000;
+                    case 2 -> 100_000;
+                    case 3 -> 200_000;
+                    case 4 -> 500_000;
+                    default -> 1_000_000;
+                };
+
+                Audio.CRUMBS_CLEARED_SOUND.play();
             }
         }
     }
@@ -167,18 +181,6 @@ public class GameState {
         }
         if (foodAtHead.isFruit()) {
             snake.grow();
-            if (snake.getLength() > 7 && stage == 1) {
-                stage++;
-            } else if (snake.getLength() > 14 && stage == 2) {
-                stage++;
-            } else if (snake.getLength() > 20 && stage == 3) {
-                stage++;
-            } else if (snake.getLength() > 26 && stage == 4) {
-                stage++;
-            } else if (snake.getLength() > 29 && stage == 5) {
-                stage++;
-            }
-
             health += foodAtHead.getHealthValue();
             score += foodAtHead.getScore() * getScoreMultiplier();
             Audio.EAT_FRUIT_SOUND.play();
@@ -186,6 +188,7 @@ public class GameState {
             switch (foodAtHead.getFood()) {
                 case INVINCIBLE:
                     INVINCIBLE_POWER_UP_EVENT.start(frames);
+                    Audio.INVINCIBLE_SOUND.play();
                     break;
                 case BOMB:
                     BOMB_POWER_UP_EVENT.start(frames);
@@ -197,7 +200,6 @@ public class GameState {
                     Audio.BOMB_SOUND.play();
                     break;
             }
-            Audio.POWER_UP_SOUND.play();
         } else {
             score += foodAtHead.getScore() * getScoreMultiplier();
         }
@@ -314,7 +316,9 @@ public class GameState {
                 Item item = food[i][j];
                 if (item != null && item.expired(updateCount)) {
                     removeFood(new PointInt(j, i));
-                    spawnFruit();
+                    if (!isGameOver()) {
+                        spawnFruit();
+                    }
                 }
             }
         }
@@ -322,9 +326,11 @@ public class GameState {
             if (snakeParticles.isMoving()) {
                 snakeParticles.updatePos(1);
             }
-            if (SNAKE_EXPLODE_EVENT.framesPassed(updateCount) > 180) {
+            if (SNAKE_EXPLODE_EVENT.framesPassed(updateCount) > 180
+                    && !GAME_OVER_EVENT.inProgress(frames)) {
                  GAME_OVER_EVENT.start(updateCount);
             }
+            return;
         } else {
             if (BOMB_POWER_UP_EVENT.inProgress(updateCount)) {
                 double radius = bombRadius.getRadius();
@@ -354,10 +360,11 @@ public class GameState {
                 }
                 if (sb.containsAnyPoint(snake.getPoints())
                         && !sb.isExploding()) {
-                    if (INVINCIBLE_POWER_UP_EVENT.inProgress(frames)) {
-                        makeBladeExplode(sb);
-                    } else if (!INVULNERABLE_EVENT.inProgress(frames)) {
+                    if (!INVULNERABLE_EVENT.inProgress(frames)
+                            && !INVINCIBLE_POWER_UP_EVENT.inProgress(frames)) {
                         takeDamage();
+                    } else if (INVINCIBLE_POWER_UP_EVENT.inProgress(frames)) {
+                        makeBladeExplode(sb);
                     }
                 }
                 if (sb.isExploding()) {
@@ -381,19 +388,6 @@ public class GameState {
                     }
                 }
             }
-
-            // TODO: consolidate into collisions method
-            for (SpinBlade sb : blades) {
-                if (sb.containsAnyPoint(snake.getPoints())
-                        && !sb.isExploding()) {
-                    if (INVINCIBLE_POWER_UP_EVENT.inProgress(frames)) {
-                        makeBladeExplode(sb);
-                    }
-                    if (!INVULNERABLE_EVENT.inProgress(frames)) {
-                        takeDamage();
-                    }
-                }
-            }
             spawnBlades();
 
             if (crumbsToDraw.size() > 0) {
@@ -408,6 +402,23 @@ public class GameState {
         }
         if (blades.size() == 0) {
             Audio.BLADE_SOUND.stop();
+        }
+
+        if (getSecondsFromFrames(frames) > 30
+                || snake.getLength() > 8 && stage == 1) {
+            stage++;
+        } else if (getSecondsFromFrames(frames) > 120
+                || snake.getLength() > 12 && stage == 2) {
+            stage++;
+        } else if (getSecondsFromFrames(frames) > 210
+                || snake.getLength() > 18  && stage == 3) {
+            stage++;
+        } else if (getSecondsFromFrames(frames) > 300
+                || snake.getLength() > 26 && stage == 4) {
+            stage++;
+        } else if (getSecondsFromFrames(frames) > 390
+                || snake.getLength() > 32 && stage == 5) {
+            stage++;
         }
     }
 
@@ -435,16 +446,8 @@ public class GameState {
     }
 
     public double getScoreMultiplier() {
-        double stageMultiplier = switch (stage) {
-            case 1 -> 1;
-            case 2 -> 1.25;
-            case 3 -> 1.5;
-            case 4 -> 1.75;
-            case 5 -> 2;
-            default -> 3;
-        };
-        double snakeMultiplier = snake.getLength() / 4;
-        return stageMultiplier * snakeMultiplier;
+        double snakeMultiplier = Math.pow(1.05, snake.getLength() - 4);
+        return (int) (snakeMultiplier / 0.05) * 0.05;
     }
 
     public ParticleManager getSnakeParticles() {
@@ -452,6 +455,7 @@ public class GameState {
     }
 
     public void makeBladeExplode(SpinBlade blade) {
+        score += 100;
         blade.makeExplode();
     }
 
@@ -569,6 +573,7 @@ public class GameState {
         } else {
             INVULNERABLE_EVENT.start(frames);
         }
+        Audio.DAMAGE_SOUND.play();
     }
 
     private boolean bladeParticlesStillMoving() {

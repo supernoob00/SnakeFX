@@ -14,12 +14,13 @@ public class Snake implements Mover {
 
     private static final int MAX_COOLDOWN = 30;
     private static final int BOOST_GAUGE_USAGE = 2;
-    private static final int BOOST_GAUGE_RECHARGE = 2;
+    private static final double BOOST_GAUGE_RECHARGE = 2;
+    private static final int MAX_BOOST_GAUGE_VALUE = 100;
 
     private Deque<SnakeCell> cells;
     private boolean isBoosting;
     private int speed;
-    private int boostGauge = 100;
+    private double boostGauge = MAX_BOOST_GAUGE_VALUE;
     private int boostCooldown = 0;
     private int largest = INITIAL_SIZE;
 
@@ -103,10 +104,10 @@ public class Snake implements Mover {
              slowDown();
             if (boostCooldown > 0) {
                 boostCooldown--;
-            } else if (boostGauge < 100){
-                // set boost gauge to 100 directly to avoid overflow
-                if (boostGauge > 100 - BOOST_GAUGE_RECHARGE) {
-                    boostGauge = 100;
+            } else if (boostGauge < MAX_BOOST_GAUGE_VALUE){
+                // set boost gauge to max directly to avoid overflow
+                if (boostGauge > MAX_BOOST_GAUGE_VALUE - BOOST_GAUGE_RECHARGE) {
+                    boostGauge = MAX_BOOST_GAUGE_VALUE;
                 } else {
                     boostGauge += BOOST_GAUGE_RECHARGE;
                 }
@@ -146,7 +147,7 @@ public class Snake implements Mover {
         }
     }
 
-    public int getBoostGauge() {
+    public double getBoostGauge() {
         return boostGauge;
     }
 
@@ -186,5 +187,13 @@ public class Snake implements Mover {
 
     public int getLargest() {
         return largest;
+    }
+
+    public double addToBoostGauge(double val) {
+        boostGauge += val;
+        if (boostGauge > MAX_BOOST_GAUGE_VALUE) {
+            boostGauge = MAX_BOOST_GAUGE_VALUE;
+        }
+        return boostGauge;
     }
 }

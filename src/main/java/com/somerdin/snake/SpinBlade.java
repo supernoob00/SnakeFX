@@ -102,13 +102,9 @@ public class SpinBlade {
                 int yUnits = id / Sprite.TILE_WIDTH_PIXELS;
                 double x = position.x() * Sprite.TILE_WIDTH_ACTUAL + xUnits * Sprite.PIXEL_WIDTH;
                 double y = position.y() * Sprite.TILE_WIDTH_ACTUAL + yUnits * Sprite.PIXEL_WIDTH;
-                double dist = Math.sqrt(Math.pow(xUnits - 4, 2) + Math.pow(yUnits - 4, 2));
                 particles.xPos[id] = x;
                 particles.yPos[id] = y;
 
-                double angle =
-                        Math.toDegrees(Math.atan((double) yUnits - 4 / (xUnits - 4D)));
-                double factor = dist / Math.sqrt(32);
                 double calcXSpeed = (yUnits - 4);
                 double calcYSpeed = (-xUnits + 4);
 

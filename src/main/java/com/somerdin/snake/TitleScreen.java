@@ -1,5 +1,6 @@
 package com.somerdin.snake;
 
+import com.somerdin.snake.Resource.Audio;
 import com.somerdin.snake.Resource.Font;
 import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.Canvas;
@@ -14,19 +15,10 @@ import java.io.InputStream;
 public class TitleScreen {
     private static final Color TEXT_COLOR = Color.WHITE;
 
-    private final Image backgroundImage;
-
     private Canvas canvas;
 
     public TitleScreen(Canvas canvas) {
         this.canvas = canvas;
-        try (InputStream in = TitleScreen.class.getResourceAsStream("/snake" +
-                "-7503732_1280.png")) {
-            backgroundImage = new Image(in, GameLoop.TOTAL_HEIGHT,
-                    GameLoop.TOTAL_HEIGHT, true, false);;
-        } catch (IOException e) {
-            throw new RuntimeException("Unable to load resource", e);
-        }
         clear();
         drawTitleText();
         drawStartText();
@@ -41,13 +33,11 @@ public class TitleScreen {
                     startTextShown = !startTextShown;
                     if (startTextShown) {
                         clear();
-                        drawBackground();
                         drawTitleText();
                         drawStartText();
                         drawAuthorText();
                     } else {
                         clear();
-                        drawBackground();
                         drawTitleText();
                         drawAuthorText();
                     }
@@ -58,9 +48,9 @@ public class TitleScreen {
         timer.start();
 
         canvas.setOnKeyPressed(keyEvent -> {
-            System.out.println("Key pressed");
             canvas.setFocusTraversable(false);
             timer.stop();
+            Audio.MENU_SOUND.play();
             GameLoop loop = new GameLoop(canvas);
         });
     }
@@ -71,10 +61,6 @@ public class TitleScreen {
         g.fillRect(0, 0, canvas.getWidth(), canvas.getHeight());
     }
 
-    private void drawBackground() {
-        GraphicsContext g = canvas.getGraphicsContext2D();
-        g.drawImage(backgroundImage, 0, 0);
-    }
 
     private void drawTitleText() {
         GraphicsContext g = canvas.getGraphicsContext2D();

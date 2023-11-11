@@ -17,6 +17,7 @@ import javafx.scene.text.Text;
 import javafx.scene.transform.Rotate;
 import javafx.util.Duration;
 
+import java.util.Formatter;
 import java.util.Iterator;
 import java.util.Map;
 
@@ -77,8 +78,11 @@ public class GameLoop {
         // key press listeners on canvas
         canvas.setOnKeyPressed(key -> {
             if (gameState.isGameOver()) {
+                gameState.setStarted(false);
+                Audio.MENU_SOUND.play();
                 restart();
-                start();
+                draw();
+                drawStartText();
             } else if (key.getCode() == KeyCode.SPACE && gameState.getSnake().canBoost()) {
                 gameState.getSnake().setBoosting(true);
             }
@@ -135,7 +139,6 @@ public class GameLoop {
         mediaPlayer.play();
         clear();
         draw();
-        drawStartText();
         timer.start();
     }
 
@@ -172,6 +175,7 @@ public class GameLoop {
         drawBlades();
         if (!gameState.SNAKE_EXPLODE_EVENT.inProgress(frameCount)) {
             if (!gameState.INVULNERABLE_EVENT.inProgress(frameCount)
+                    || gameState.INVINCIBLE_POWER_UP_EVENT.inProgress(frameCount)
                     || gameState.INVULNERABLE_EVENT.framesPassed(frameCount) % 10 < 5) {
                 drawSnake();
             }
@@ -190,9 +194,9 @@ public class GameLoop {
         drawGameInfo();
         if (gameState.isGameOver()) {
             drawGameOver();
-            // TODO: fix this - not blinking continue text
             if (gameState.GAME_OVER_EVENT.framesPassed(frameCount) % 60 < 30) {
                 drawContinueText();
+                System.out.println("hello");
             }
         }
     }
@@ -204,8 +208,14 @@ public class GameLoop {
 
         int switchVal = -1;
         if (gameState.INVINCIBLE_POWER_UP_EVENT.inProgress(frameCount)) {
-            int cycle =
-                    gameState.INVINCIBLE_POWER_UP_EVENT.framesPassed(frameCount) < 240 ? 28 : 12;
+            long passed =
+                    gameState.INVINCIBLE_POWER_UP_EVENT.framesPassed(frameCount);
+            int cycle;
+            if (passed < 240) {
+                cycle = 24;
+            } else {
+                cycle = 8;
+            }
             int num =
                     (int) (gameState.INVINCIBLE_POWER_UP_EVENT.framesPassed(frameCount) % cycle);
             for (int i = 0; i < 4; i++) {
@@ -545,7 +555,9 @@ public class GameLoop {
         g.fillRect(GAME_AREA_WIDTH, 0, GAME_INFO_WIDTH, TOTAL_HEIGHT);
         g.setFill(GAME_INFO_TEXT_COLOR);
         g.setFont(Font.ATARI_24);
-        g.fillText("SCORE x" + gameState.getScoreMultiplier(),
+        Formatter fm = new Formatter();
+        g.fillText("SCORE x" + fm.format("%.2f",
+                        gameState.getScoreMultiplier()),
                 GAME_AREA_WIDTH + 20, 500);
         String score = String.format("%09d", gameState.getScore());
         g.fillText(score, GAME_AREA_WIDTH + 20, 550);
