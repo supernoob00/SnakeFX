@@ -1,0 +1,10 @@
+<component name="ArtifactManager">
+  <artifact type="javafx" name="SnakeFx">
+    <output-path>$PROJECT_DIR$/out/artifacts/SnakeFx</output-path>
+    <root id="root">
+      <element id="archive" name="Snake.jar">
+        <element id="module-output" name="Snake" />
+      </element>
+    </root>
+  </artifact>
+</component>

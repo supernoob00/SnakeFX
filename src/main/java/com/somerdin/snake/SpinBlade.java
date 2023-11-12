@@ -9,6 +9,8 @@ import java.util.Objects;
 
 public class SpinBlade {
     public static final double SLOW_BLADE_SPEED = 0.05;
+    public static final double MEDIUM_BLADE_SPEED = 0.1;
+    public static final double FAST_BLADE_SPEED = 0.2;
 
     private ParticleManager particles;
     private PointDouble position;

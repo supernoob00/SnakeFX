@@ -244,7 +244,47 @@ public class GameState {
     public void spawnBlade() {
         int spawnPlacement = (int) (Math.random() * width);
         int spawnSide = (int) (Math.random() * 4);
-        double speed = SpinBlade.SLOW_BLADE_SPEED;
+
+        double rand = Math.random();
+        double speed;
+
+        switch (stage) {
+            case 1, 2 -> {
+                if (rand < 0.5) {
+                    speed = SpinBlade.SLOW_BLADE_SPEED;
+                } else {
+                    speed = SpinBlade.MEDIUM_BLADE_SPEED;
+                }
+            }
+            case 3 -> {
+                if (rand < 0.5) {
+                    speed = SpinBlade.SLOW_BLADE_SPEED;
+                } else {
+                    speed = SpinBlade.MEDIUM_BLADE_SPEED;
+                }
+            }
+            case 4 -> {
+                if (rand < 0.3) {
+                    speed = SpinBlade.SLOW_BLADE_SPEED;
+                } else if (rand < 0.9) {
+                    speed = SpinBlade.MEDIUM_BLADE_SPEED;
+                } else {
+                    speed = SpinBlade.FAST_BLADE_SPEED;
+                }
+            }
+            case 5 -> {
+                if (rand < 0.2) {
+                    speed = SpinBlade.SLOW_BLADE_SPEED;
+                } else if (rand < 0.5) {
+                    speed = SpinBlade.MEDIUM_BLADE_SPEED;
+                } else {
+                    speed = SpinBlade.FAST_BLADE_SPEED;
+                }
+            }
+            default -> {
+                speed = SpinBlade.FAST_BLADE_SPEED;
+            }
+        };
         double size = 0.75;
 
         PointDouble start;
