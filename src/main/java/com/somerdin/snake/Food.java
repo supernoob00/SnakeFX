@@ -2,15 +2,13 @@ package com.somerdin.snake;
 
 public enum Food {
     // fruit
-    RED_APPLE(500, 1, 240, 0),
-    CHERRY(1000, 2, 240, 0),
-    COOKIE(2000, 4, 240, 0),
+    RED_APPLE(250, 1, 240, 0),
+    CHERRY(500, 2, 240, 0),
+    COOKIE(1000, 4, 240, 0),
 
     // power ups
-    // SHIELD(500, 4, 240, 0),
-    INVINCIBLE(500, 4, 360, 0),
-    // MAGNET(500, 4, 240, 0),
-    BOMB(1000, 8, 240, 0),
+    INVINCIBLE(250, 4, 360, 0),
+    BOMB(500, 8, 240, 0),
 
     // represent different crumb colors
     CRUMB_1(10, 0, -1, 1),
@@ -27,18 +25,12 @@ public enum Food {
         };
     }
 
-    public static final Food[] FRUITS = new Food[] {
-            RED_APPLE,
-            CHERRY,
-            COOKIE
-    };
+    private final int score;
+    private final int healthValue;
+    private final int frames;
+    private final int colorId;
 
-    private int score;
-    private int healthValue;
-    private int frames;
-    private int colorId;
-
-    private Food(int score, int healthValue, int frames, int colorId) {
+    Food(int score, int healthValue, int frames, int colorId) {
         this.score = score;
         this.healthValue = healthValue;
         this.frames = frames;

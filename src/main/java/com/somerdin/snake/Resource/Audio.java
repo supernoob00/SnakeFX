@@ -17,7 +17,7 @@ public class Audio {
                     "/powerup.wav").toExternalForm());
     public static final AudioClip DEATH_SOUND = new AudioClip(Audio.class.getResource(
             "/sound" +
-            "/death_scream.wav").toExternalForm());
+                    "/death_scream.wav").toExternalForm());
     public static final AudioClip DAMAGE_SOUND =
             new AudioClip(Audio.class.getResource("/sound/damage_sound.wav").toExternalForm());
     public static final AudioClip BLADE_SOUND =

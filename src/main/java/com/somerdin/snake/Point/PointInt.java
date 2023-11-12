@@ -2,8 +2,8 @@ package com.somerdin.snake.Point;
 
 import com.somerdin.snake.Direction;
 
+import java.util.Collection;
 import java.util.Objects;
-import java.util.*;
 
 public record PointInt(int x, int y) {
     public static double interX(PointInt p1, PointInt p2, double d) {

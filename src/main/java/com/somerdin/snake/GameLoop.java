@@ -1,6 +1,5 @@
 package com.somerdin.snake;
 
-import com.somerdin.snake.Point.PointDouble;
 import com.somerdin.snake.Point.PointInt;
 import com.somerdin.snake.Resource.Audio;
 import com.somerdin.snake.Resource.Font;
@@ -8,7 +7,6 @@ import com.somerdin.snake.Resource.Sprite;
 import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.effect.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.paint.Color;
@@ -39,12 +37,12 @@ public class GameLoop {
     public static final Color GAME_INFO_TEXT_COLOR = Color.WHITE;
     public static final Color CHECKERBOARD_LIGHT_COLOR = Color.web("#1919a6");
 
-    public static final Color BOMB_RADIUS_START_COLOR = Color.rgb(255,255,204
+    public static final Color BOMB_RADIUS_START_COLOR = Color.rgb(255, 255, 204
             , 0.9);
     public static final Color BOMB_RADIUS_END_COLOR = Color.rgb(255, 255, 255
             , 0.2);
 
-    public static final Map<KeyCode, Direction> keyEventMap = Map.of(
+    public static final Map<KeyCode, Direction> keyDirectionMap = Map.of(
             KeyCode.A, Direction.LEFT,
             KeyCode.LEFT, Direction.LEFT,
             KeyCode.W, Direction.UP,
@@ -55,23 +53,17 @@ public class GameLoop {
             KeyCode.DOWN, Direction.DOWN
     );
 
-    private MediaPlayer mediaPlayer = new MediaPlayer(Audio.MUSIC);
+    private final MediaPlayer mediaPlayer = new MediaPlayer(Audio.MUSIC);
     private GameState gameState;
-    private Canvas canvas;
-    private GraphicsContext g;
-    private int cellLength;
-    private AnimationTimer timer;
-
-    private int prevStage = 0;
+    private final GraphicsContext g;
+    private final int cellLength;
+    private final AnimationTimer timer;
 
     // number of game state updates which have occurred
     private long frameCount = 0;
 
-    private long newStageTimestamp;
-
     public GameLoop(Canvas canvas) {
         gameState = new GameState(GameState.HEIGHT, GameState.WIDTH);
-        this.canvas = canvas;
 
         // key press listeners on canvas
         canvas.setOnKeyPressed(key -> {
@@ -84,30 +76,24 @@ public class GameLoop {
                 drawStartText();
             } else if (key.getCode() == KeyCode.SPACE && gameState.getSnake().canBoost()) {
                 gameState.getSnake().setBoosting(true);
-            }
-            // arrow key pressed; only change snake direction if key pressed not
-            // opposite to current head direction
-            else if (keyEventMap.containsKey(key.getCode())) {
+            } else if (key.getCode() == KeyCode.P) {
+                // TODO
+            } else if (keyDirectionMap.containsKey(key.getCode())) {
                 if (!gameState.isStarted()) {
                     gameState.setStarted(true);
-                    Direction start = keyEventMap.get(key.getCode());
+                    Direction start = keyDirectionMap.get(key.getCode());
                     if (start != Direction.LEFT) {
-                        gameState.setQueuedDirection(keyEventMap.get(key.getCode()));
+                        gameState.setQueuedDirection(keyDirectionMap.get(key.getCode()));
                     }
                     start();
                 } else {
-                    Direction direction = keyEventMap.get(key.getCode());
+                    Direction direction = keyDirectionMap.get(key.getCode());
                     if (direction != gameState.getSnake().getHead().getDir().opposite()) {
                         gameState.setQueuedDirection(direction);
                     }
                 }
-            } else if (key.getCode() == KeyCode.E) {
-                gameState.removeAllCrumbs();
-            } else if (key.getCode() == KeyCode.C) {
-                System.out.println(gameState.crumbCount);
             }
         });
-
         // key release listeners on canvas
         canvas.setOnKeyReleased(key -> {
             if (gameState.isGameOver()) {
@@ -205,7 +191,7 @@ public class GameLoop {
     }
 
     private void drawSnake() {
-        Sprite toDraw = null;
+        Sprite toDraw;
         Snake snake = gameState.getSnake();
         boolean headDrawn = false;
 
@@ -357,13 +343,9 @@ public class GameLoop {
     }
 
     private void drawFood() {
-        PointInt snakeHeadPoint = gameState.getSnake().getHead().getPos();
-        double snakeHeadX = snakeHeadPoint.x() * cellLength;
-        double snakeHeadY = snakeHeadPoint.y() * cellLength;
-
         for (int y = 0; y < gameState.height; y++) {
             for (int x = 0; x < gameState.width; x++) {
-                Item food = gameState.getFood(new PointInt(x ,y));
+                Item food = gameState.getFood(new PointInt(x, y));
                 if (food == null) {
                     continue;
                 }
@@ -423,7 +405,6 @@ public class GameLoop {
         }
     }
 
-    // TODO: this doesn't really work properly
     private void drawSpriteToGameBounds(Sprite toDraw, double x, double y) {
         g.save(); // saves the current state on stack, including the current transform
         rotate(g, toDraw.getRotate(), x + toDraw.width() / 2D,
@@ -482,14 +463,6 @@ public class GameLoop {
         return a + f * (b - a);
     }
 
-    /**
-     * Sets the transform for the GraphicsContext to rotate around a pivot point.
-     *
-     * @param gc the graphics context the transform to applied to.
-     * @param angle the angle of rotation.
-     * @param px the x pivot co-ordinate for the rotation (in canvas co-ordinates).
-     * @param py the y pivot co-ordinate for the rotation (in canvas co-ordinates).
-     */
     private void rotate(GraphicsContext gc, double angle, double px, double py) {
         Rotate r = new Rotate(angle, px + WALL_WIDTH, py + WALL_WIDTH);
         gc.setTransform(r.getMxx(), r.getMyx(), r.getMxy(), r.getMyy(), r.getTx(), r.getTy());
@@ -559,9 +532,12 @@ public class GameLoop {
         Formatter fm = new Formatter();
         g.fillText("SCORE x" + fm.format("%.2f",
                         gameState.getScoreMultiplier()),
-                GAME_AREA_WIDTH + 20, 500);
+                GAME_AREA_WIDTH + 10, 500);
         String score = String.format("%09d", gameState.getScore());
-        g.fillText(score, GAME_AREA_WIDTH + 20, 550);
+        g.fillText(score, GAME_AREA_WIDTH + 10, 520);
+        g.fillText("HI SCORE", GAME_AREA_WIDTH + 10, 590);
+        String hiScore = String.format("%09d", Score.getHighScore());
+        g.fillText(hiScore, GAME_AREA_WIDTH + 10, 610);
         g.fillText("BOOST", GAME_AREA_WIDTH + 20, 50);
         g.setFill(GAME_INFO_TEXT_COLOR);
         g.fillText("HEALTH", GAME_AREA_WIDTH + 20, 140);
@@ -590,8 +566,8 @@ public class GameLoop {
 
         g.setStroke(Color.WHITE);
         g.setLineWidth(2);
-        g.strokeLine(x + outerLength * 0.25, y + outerWidth / 2 - innerWidth / 2, x + outerLength * 0.25,
-                y + innerWidth + 2);
+        g.strokeLine(x + outerLength * 0.25, y + outerWidth / 2 - innerWidth / 2,
+                x + outerLength * 0.25, y + innerWidth + 2);
     }
 
     private void drawHealth() {
@@ -616,10 +592,8 @@ public class GameLoop {
             case 1 -> drawSpriteToGameBounds(Sprite.QUARTER_HEART, x, y);
             case 2 -> drawSpriteToGameBounds(Sprite.HALF_HEART, x, y);
             case 3 -> drawSpriteToGameBounds(Sprite.THREE_QUARTERS_HEART, x, y);
-            default -> {
-                return;
-            }
-        };
+            default -> {}
+        }
     }
 
     private void restart() {
@@ -627,7 +601,6 @@ public class GameLoop {
         gameState = new GameState(GameState.HEIGHT, GameState.WIDTH);
         clear();
 
-        prevStage = 0;
         frameCount = 0;
     }
 }

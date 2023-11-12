@@ -13,7 +13,7 @@ public class Maze {
 
         @Override
         public String toString() {
-            char[] letters = new char[] {'*', '*', '*', '*'};
+            char[] letters = new char[]{'*', '*', '*', '*'};
             if (!north) {
                 letters[0] = 'N';
             }
@@ -29,11 +29,12 @@ public class Maze {
             return new String(letters);
         }
     }
-    private MazeCell[][] maze;
+
+    private final MazeCell[][] maze;
 
     public Maze(int size) {
         maze = new MazeCell[size + 2][size + 2];
-        for (int i = 0 ; i < maze.length; i++) {
+        for (int i = 0; i < maze.length; i++) {
             for (int j = 0; j < maze.length; j++) {
                 maze[i][j] = new MazeCell();
             }
@@ -87,10 +88,8 @@ public class Maze {
     }
 
     private int[] direction(int x, int y) {
-        int oldX = x;
-        int oldY = y;
         double denominator = 1;
-        int[] direction = new int[] {-1, -1};
+        int[] direction = new int[]{-1, -1};
         if (!maze[y][x + 1].traveled && Math.random() < 1 / denominator) {
             denominator++;
             direction[0] = 1;
@@ -116,8 +115,8 @@ public class Maze {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < maze.length; i++) {
-            sb.append(Arrays.toString(maze[i]));
+        for (MazeCell[] mazeCells : maze) {
+            sb.append(Arrays.toString(mazeCells));
             sb.append(System.lineSeparator());
         }
         return sb.toString();
@@ -125,9 +124,5 @@ public class Maze {
 
     public MazeCell[][] getMaze() {
         return maze;
-    }
-
-    public static void main(String[] args) {
-        Maze maze = new Maze(10);
     }
 }

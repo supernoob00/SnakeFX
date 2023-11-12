@@ -11,12 +11,12 @@ public class ParticleManager {
     public double[] ySpeed;
     public boolean[] visible;
 
-    private int[] particleVisibility;
+    private final int[] particleVisibility;
     private int visibleIndex;
 
-    private double bottomBounds;
-    private double rightBounds;
-    private double deceleration;
+    private final double bottomBounds;
+    private final double rightBounds;
+    private final double deceleration;
     private boolean moving = true;
 
     private static void shuffle(int[] arr) {
@@ -51,8 +51,6 @@ public class ParticleManager {
         // shuffle visibility
         shuffle(particleVisibility);
     }
-
-    private double[] minSpeed;
 
     public void updatePos(double frames) {
         boolean motion = false;

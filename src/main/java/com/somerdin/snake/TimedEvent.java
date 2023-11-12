@@ -7,27 +7,24 @@ package com.somerdin.snake;
 public class TimedEvent {
     public static final int INDEFINITE_DURATION = -1;
     public static final int INVULNERABLE_TIME = 150; // 2.5 seconds
-    public static final int MAGNET_ACTIVE_TIME = 300 ;
     public static final int BOMB_ACTIVE_TIME = 60;
     public static final int POWER_UP_ACTIVE_TIME = 300; // 5 seconds
 
-    public static enum TimedEventType {
+    public enum TimedEventType {
         SNAKE_EXPLODE(INDEFINITE_DURATION),
-        BLADES_EXPLODE(INDEFINITE_DURATION),
         INVULNERABLE(INVULNERABLE_TIME),
-        MAGNETIZED_POWER_UP(MAGNET_ACTIVE_TIME),
         INVINCIBLE_POWER_UP(POWER_UP_ACTIVE_TIME),
         BOMB_POWER_UP(BOMB_ACTIVE_TIME),
         GAME_OVER(INDEFINITE_DURATION);
 
         public final int duration;
 
-        private TimedEventType(int duration) {
+        TimedEventType(int duration) {
             this.duration = duration;
         }
     }
 
-    private TimedEventType type;
+    private final TimedEventType type;
     private long timestamp = 0;
 
     public TimedEvent(TimedEventType type) {

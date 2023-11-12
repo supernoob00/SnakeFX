@@ -1,8 +1,8 @@
 package com.somerdin.snake;
 
 public class Item {
-    private Food food;
-    private long createTimestamp;
+    private final Food food;
+    private final long createTimestamp;
 
     public Item(Food food, long createTimestamp) {
         this.food = food;

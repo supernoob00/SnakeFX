@@ -13,10 +13,10 @@ public class SpinBlade {
     private ParticleManager particles;
     private PointDouble position;
     private Direction direction;
-    private BladePath path;
+    private final BladePath path;
     private double distTraveled;
     private double speed;
-    private double size;
+    private final double size;
 
     public SpinBlade(PointDouble position, Direction direction, double speed,
                      double size) {
@@ -97,36 +97,36 @@ public class SpinBlade {
                 GameLoop.PLAYABLE_AREA_WIDTH, GameLoop.PLAYABLE_AREA_HEIGHT,
                 0.05);
 
-            for (int id = 0; id < pixelsPerTile; id++) {
-                int xUnits = id % Sprite.TILE_WIDTH_PIXELS;
-                int yUnits = id / Sprite.TILE_WIDTH_PIXELS;
-                double x = position.x() * Sprite.TILE_WIDTH_ACTUAL + xUnits * Sprite.PIXEL_WIDTH;
-                double y = position.y() * Sprite.TILE_WIDTH_ACTUAL + yUnits * Sprite.PIXEL_WIDTH;
-                particles.xPos[id] = x;
-                particles.yPos[id] = y;
+        for (int id = 0; id < pixelsPerTile; id++) {
+            int xUnits = id % Sprite.TILE_WIDTH_PIXELS;
+            int yUnits = id / Sprite.TILE_WIDTH_PIXELS;
+            double x = position.x() * Sprite.TILE_WIDTH_ACTUAL + xUnits * Sprite.PIXEL_WIDTH;
+            double y = position.y() * Sprite.TILE_WIDTH_ACTUAL + yUnits * Sprite.PIXEL_WIDTH;
+            particles.xPos[id] = x;
+            particles.yPos[id] = y;
 
-                double calcXSpeed = (yUnits - 4);
-                double calcYSpeed = (-xUnits + 4);
+            double calcXSpeed = (yUnits - 4);
+            double calcYSpeed = (-xUnits + 4);
 
-                if (calcXSpeed < 0) {
-                    calcXSpeed = 0.5 * Math.max(calcXSpeed,
-                            -4);
-                } else {
-                    calcXSpeed = 0.5 * Math.min(calcXSpeed,
-                            4);
-                }
-                if (calcYSpeed < 0) {
-                    calcYSpeed = 0.5 * Math.max(calcYSpeed,
-                            -4);
-                } else {
-                    calcYSpeed = 0.5 * Math.min(calcYSpeed,
-                            4);
-                }
-                particles.xSpeed[id] =
-                        4 * calcXSpeed * (Math.random() * 0.5 + 0.5);
-                particles.ySpeed[id] =
-                        4 * calcYSpeed * (Math.random() * 0.5 + 0.5);
+            if (calcXSpeed < 0) {
+                calcXSpeed = 0.5 * Math.max(calcXSpeed,
+                        -4);
+            } else {
+                calcXSpeed = 0.5 * Math.min(calcXSpeed,
+                        4);
             }
+            if (calcYSpeed < 0) {
+                calcYSpeed = 0.5 * Math.max(calcYSpeed,
+                        -4);
+            } else {
+                calcYSpeed = 0.5 * Math.min(calcYSpeed,
+                        4);
+            }
+            particles.xSpeed[id] =
+                    4 * calcXSpeed * (Math.random() * 0.5 + 0.5);
+            particles.ySpeed[id] =
+                    4 * calcYSpeed * (Math.random() * 0.5 + 0.5);
+        }
         Audio.BLADE_EXPLODE_SOUND.play();
     }
 

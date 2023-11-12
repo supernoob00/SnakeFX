@@ -6,11 +6,29 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.layout.Pane;
 import javafx.stage.Stage;
 
-import java.io.IOException;
+import java.io.*;
 
 public class SnakeApplication extends Application {
+
     @Override
     public void start(Stage stage) throws IOException {
+        // find high score text file
+        int scoreFromFile = Score.loadHighScore();
+        if (scoreFromFile == -1) {
+            try {
+                File file = new File(Score.TEXT_FILE_DIRECTORY);
+                file.delete();
+                file.setReadOnly();
+                file.createNewFile();
+                Score.setHighScore(0);
+            } catch (IOException | SecurityException | NullPointerException e) {
+                Score.setScoreSaved(false);
+            }
+        } else {
+            Score.setHighScore(scoreFromFile);
+            Score.setScoreSaved(true);
+        }
+
         Canvas canvas = new Canvas(GameLoop.TOTAL_WIDTH, GameLoop.TOTAL_HEIGHT);
         canvas.setFocusTraversable(true);
 

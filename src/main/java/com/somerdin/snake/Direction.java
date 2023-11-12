@@ -25,8 +25,8 @@ public enum Direction {
 
     public Direction[] orthogonal() {
         return switch (this) {
-            case UP, DOWN -> new Direction[] {LEFT, RIGHT};
-            case LEFT, RIGHT -> new Direction[] {UP, DOWN};
+            case UP, DOWN -> new Direction[]{LEFT, RIGHT};
+            case LEFT, RIGHT -> new Direction[]{UP, DOWN};
         };
     }
 

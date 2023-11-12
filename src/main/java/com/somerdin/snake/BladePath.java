@@ -10,9 +10,9 @@ public class BladePath {
     public static final int PATH_DRAW_SPEED = 5;
 
     private PointInt start;
-    private Deque<Direction> path = new ArrayDeque<>();
+    private final Deque<Direction> path = new ArrayDeque<>();
     private int drawn;
-    private int colorId;
+    private final int colorId;
     private int initialSize = 0;
 
     public BladePath(Direction initialDirection, PointInt start) {
@@ -93,9 +93,9 @@ public class BladePath {
     private Direction[] possibleRandomDirs(Direction start, Direction current) {
         if (start == current) {
             Direction[] orthogonal = start.orthogonal();
-            return new Direction[] {start, orthogonal[0], orthogonal[1]};
+            return new Direction[]{start, orthogonal[0], orthogonal[1]};
         } else {
-            return new Direction[] {start, current};
+            return new Direction[]{start, current};
         }
     }
 

@@ -32,10 +32,10 @@ public final class Sprite {
         try (InputStream primarySprites = Sprite.class.getResourceAsStream("/pixil-layer" +
                 "-Background" +
                 ".png");
-        InputStream bladePathSprites = Sprite.class.getResourceAsStream("/blade-path.png");
-        InputStream heartSprites = Sprite.class.getResourceAsStream("/pixil-frame-heart.png");
-        InputStream shieldSprite = Sprite.class.getResourceAsStream("/shield.png");
-        InputStream powerUpSprites =
+             InputStream bladePathSprites = Sprite.class.getResourceAsStream("/blade-path.png");
+             InputStream heartSprites = Sprite.class.getResourceAsStream("/pixil-frame-heart.png");
+             InputStream shieldSprite = Sprite.class.getResourceAsStream("/shield.png");
+             InputStream powerUpSprites =
                      Sprite.class.getResourceAsStream("/powerups.png")) {
             PRIMARY_SPRITE_SHEET = new Image(primarySprites, 128 * SCALE_FACTOR, 128 * SCALE_FACTOR, true, false);
             BLADE_PATH_SPRITE_SHEET = new Image(bladePathSprites, 32 * SCALE_FACTOR, 32 * SCALE_FACTOR, true, false);
@@ -134,7 +134,7 @@ public final class Sprite {
         HEART_EMPTY_IMG.setViewport(getViewport(0, 0, TILE_WIDTH_ACTUAL));
         HEART_QUARTER_IMG.setViewport(getViewport(1, 0, TILE_WIDTH_ACTUAL));
         HEART_HALF_IMG.setViewport(getViewport(2, 0, TILE_WIDTH_ACTUAL));
-        HEART_THREE_QUARTERS_IMG.setViewport(getViewport(3, 0 ,
+        HEART_THREE_QUARTERS_IMG.setViewport(getViewport(3, 0,
                 TILE_WIDTH_ACTUAL));
         HEART_FULL_IMG.setViewport(getViewport(0, 1, TILE_WIDTH_ACTUAL));
     }
@@ -193,7 +193,7 @@ public final class Sprite {
                 case 4 -> viewport = getViewport(3, 0, TILE_WIDTH_ACTUAL);
                 case 5 -> viewport = getViewport(0, 1, TILE_WIDTH_ACTUAL);
                 default -> viewport = getViewport(1, 1, TILE_WIDTH_ACTUAL);
-            };
+            }
         } else {
             switch (colorId) {
                 case 1 -> viewport = getViewport(2, 1, TILE_WIDTH_ACTUAL);
@@ -208,8 +208,9 @@ public final class Sprite {
                 case BOTTOM_RIGHT_CORNER -> BLADE_PATH.imgView.setRotate(-90);
                 case TOP_LEFT_CORNER -> BLADE_PATH.imgView.setRotate(90);
                 case TOP_RIGHT_CORNER -> BLADE_PATH.imgView.setRotate(180);
-                default -> throw new IllegalArgumentException("Invalid corner " +
-                        "argument: " + whichCorner);
+                default ->
+                        throw new IllegalArgumentException("Invalid corner " +
+                                "argument: " + whichCorner);
             }
         }
         BLADE_PATH.imgView.setViewport(viewport);
@@ -231,16 +232,17 @@ public final class Sprite {
                 tileWidth);
     }
 
-    private ImageView imgView;
+    private final ImageView imgView;
     // Direction.UP is right-side up, rotation angle always stored positive
-    private double rotateAngle;
+    private final double rotateAngle;
+
     public Sprite(ImageView imgView, double rotateAngle) {
         this.imgView = imgView;
         if (rotateAngle < 0) {
             rotateAngle = -rotateAngle + 180;
         }
         this.rotateAngle = rotateAngle % 360;
-    };
+    }
 
     public Sprite(ImageView imgView) {
         this(imgView, 0);

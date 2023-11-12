@@ -6,6 +6,7 @@ import com.somerdin.snake.Resource.Audio;
 import com.somerdin.snake.Resource.Sprite;
 import javafx.scene.shape.Circle;
 
+import java.io.Writer;
 import java.util.*;
 
 public class GameState {
@@ -23,7 +24,7 @@ public class GameState {
 
     private final Deque<SpinBlade> blades = new ArrayDeque<>();
     private final List<PointInt> crumbsToDraw = new ArrayList<>();
-    private Circle bombRadius = new Circle();
+    private final Circle bombRadius = new Circle();
 
     public final TimedEvent GAME_OVER_EVENT =
             new TimedEvent(TimedEvent.TimedEventType.GAME_OVER);
@@ -36,14 +37,6 @@ public class GameState {
     public final TimedEvent BOMB_POWER_UP_EVENT =
             new TimedEvent(TimedEvent.TimedEventType.BOMB_POWER_UP);
 
-    public final TimedEvent[] events = new TimedEvent[] {
-            GAME_OVER_EVENT,
-            SNAKE_EXPLODE_EVENT,
-            INVULNERABLE_EVENT,
-            INVINCIBLE_POWER_UP_EVENT,
-            BOMB_POWER_UP_EVENT
-    };
-
     private Direction queuedDirection;
 
     private final Snake snake;
@@ -54,7 +47,7 @@ public class GameState {
 
     private boolean isStarted;
 
-    private long score = 0;
+    private int score = 0;
     private int stage = 1;
     private long frames = 0;
     private int crumbClearCount = 0;
@@ -103,11 +96,11 @@ public class GameState {
                 setInitialCrumbPattern();
 
                 score += switch (crumbClearCount) {
-                    case 1 -> 50_000;
-                    case 2 -> 100_000;
-                    case 3 -> 200_000;
-                    case 4 -> 500_000;
-                    default -> 1_000_000;
+                    case 1 -> 25_000;
+                    case 2 -> 50_000;
+                    case 3 -> 100_000;
+                    case 4 -> 200_000;
+                    default -> 500_000;
                 };
 
                 Audio.CRUMBS_CLEARED_SOUND.play();
@@ -185,11 +178,11 @@ public class GameState {
             Audio.EAT_FRUIT_SOUND.play();
         } else if (foodAtHead.isPowerUp()) {
             switch (foodAtHead.getFood()) {
-                case INVINCIBLE:
+                case INVINCIBLE -> {
                     INVINCIBLE_POWER_UP_EVENT.start(frames);
                     Audio.INVINCIBLE_SOUND.play();
-                    break;
-                case BOMB:
+                }
+                case BOMB -> {
                     BOMB_POWER_UP_EVENT.start(frames);
                     bombRadius.setCenterX(GameLoop.WALL_WIDTH
                             + p.x() * Sprite.TILE_WIDTH_ACTUAL + Sprite.TILE_WIDTH_ACTUAL / 2);
@@ -197,26 +190,10 @@ public class GameState {
                             + p.y() * Sprite.TILE_WIDTH_ACTUAL + Sprite.TILE_WIDTH_ACTUAL / 2);
                     bombRadius.setRadius(INITIAL_BOMB_RADIUS);
                     Audio.BOMB_SOUND.play();
-                    break;
+                }
             }
         } else {
             score += foodAtHead.getScore() * getScoreMultiplier();
-        }
-    }
-
-    private void markFoodForAttract() {
-        PointInt pos = snake.getHead().getPos();
-        PointInt topLeft = new PointInt(Math.max(pos.x() - 1, 0),
-                Math.max(pos.y() - 1, 0));
-        PointInt bottomRight = new PointInt(Math.min(pos.x() + 1,
-                width - 1),
-                Math.min(pos.y() + 1, height - 1));
-        for (int i = topLeft.y(); i <= bottomRight.y(); i++) {
-            for (int j = topLeft.x(); j <= bottomRight.x(); j++) {
-                if (snake.containsPoint(new PointInt(j, i))) {
-                    continue;
-                }
-            }
         }
     }
 
@@ -240,9 +217,11 @@ public class GameState {
         // INVINCIBILITY: 0.102
         // BOMB: 0.05
         double rand = Math.random();
-        double[] probabilities = new double[] {0.88, 0.04, 0.02, 0.03,
+        double[] probabilities = new double[]{0.88, 0.04, 0.02, 0.03,
                 0.03};
-        double adjustment = snake.getLength() * 0.01;
+        double adjustment =
+                snake.getLength() * 0.015 + Math.min(crumbClearCount * 0.1,
+                        0.8);
         double[] dist = new double[5];
         for (int i = 0; i < probabilities.length; i++) {
             if (i == 0) {
@@ -276,22 +255,22 @@ public class GameState {
         PointDouble start;
         SpinBlade blade = null;
         switch (spawnSide) {
-            case 0:
+            case 0 -> {
                 start = new PointDouble(spawnPlacement, -1);
                 blade = new SpinBlade(start, Direction.DOWN, speed, size);
-                break;
-            case 1:
+            }
+            case 1 -> {
                 start = new PointDouble(spawnPlacement, width + 1);
                 blade = new SpinBlade(start, Direction.UP, speed, size);
-                break;
-            case 2:
+            }
+            case 2 -> {
                 start = new PointDouble(-2, spawnPlacement);
                 blade = new SpinBlade(start, Direction.RIGHT, speed, size);
-                break;
-            case 3:
+            }
+            case 3 -> {
                 start = new PointDouble(width + 1, spawnPlacement);
                 blade = new SpinBlade(start, Direction.LEFT, speed, size);
-                break;
+            }
         }
         blades.add(blade);
     }
@@ -334,8 +313,11 @@ public class GameState {
             }
             if (SNAKE_EXPLODE_EVENT.framesPassed(updateCount) > 180
                     && !GAME_OVER_EVENT.inProgress(frames)) {
-                 GAME_OVER_EVENT.start(updateCount);
-                 Audio.GAME_OVER_SOUND.play();
+                if (score > Score.getHighScore()) {
+                    Score.writeHighScore(score);
+                }
+                GAME_OVER_EVENT.start(updateCount);
+                Audio.GAME_OVER_SOUND.play();
             }
             return;
         } else {
@@ -420,7 +402,7 @@ public class GameState {
                 || snake.getLength() > 16) && stage == 2) {
             stage++;
         } else if ((getSecondsFromFrames(frames) > 270
-                || snake.getLength() > 24)  && stage == 3) {
+                || snake.getLength() > 24) && stage == 3) {
             stage++;
         } else if ((getSecondsFromFrames(frames) > 290
                 || snake.getLength() > 30) && stage == 4) {
@@ -440,10 +422,6 @@ public class GameState {
         int randomX = (int) (width * Math.random());
         int randomY = (int) (height * Math.random());
         return new PointInt(randomX, randomY);
-    }
-
-    public Direction getQueuedDirection() {
-        return queuedDirection;
     }
 
     public void setQueuedDirection(Direction direction) {
@@ -502,7 +480,7 @@ public class GameState {
                         (sc.getDir().getAngle() - randomAngleRange / 2)
                                 + (int) (Math.random() * randomAngleRange);
                 double speed =
-                        2.5 + (4 * 1 / snake.speed()) + (Math.random() * 0.4 - 0.2);
+                        2.5 + (4 / snake.speed()) + (Math.random() * 0.4 - 0.2);
                 snakeParticles.setVelocity(id, angle, speed);
             }
             j++;

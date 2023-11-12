@@ -1,21 +1,16 @@
 package com.somerdin.snake;
 
-import com.somerdin.snake.Resource.Audio;
 import com.somerdin.snake.Resource.Font;
 import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.image.Image;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Text;
-
-import java.io.IOException;
-import java.io.InputStream;
 
 public class TitleScreen {
     private static final Color TEXT_COLOR = Color.WHITE;
 
-    private Canvas canvas;
+    private final Canvas canvas;
 
     public TitleScreen(Canvas canvas) {
         this.canvas = canvas;
@@ -50,6 +45,7 @@ public class TitleScreen {
         canvas.setOnKeyPressed(keyEvent -> {
             canvas.setFocusTraversable(false);
             timer.stop();
+            // start the game
             GameLoop loop = new GameLoop(canvas);
         });
     }
@@ -90,7 +86,7 @@ public class TitleScreen {
         Text startText = new Text("GAME CREATED BY SAM S");
         startText.setFont(Font.ATARI_16);
         double startTextX =
-                canvas.getWidth() - 1.1 * startText.getLayoutBounds().getWidth() ;
+                canvas.getWidth() - 1.1 * startText.getLayoutBounds().getWidth();
         double startTextY =
                 canvas.getHeight() - 1.5 * startText.getLayoutBounds().getHeight();
         g.setFont(startText.getFont());
