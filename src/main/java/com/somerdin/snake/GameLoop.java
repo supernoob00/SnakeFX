@@ -44,8 +44,6 @@ public class GameLoop {
     public static final Color BOMB_RADIUS_END_COLOR = Color.rgb(255, 255, 255
             , 0.2);
 
-    public static final int DRAW_UPDATE_FPS = 60;
-
     public static final Map<KeyCode, Direction> keyEventMap = Map.of(
             KeyCode.A, Direction.LEFT,
             KeyCode.LEFT, Direction.LEFT,
@@ -78,6 +76,7 @@ public class GameLoop {
         // key press listeners on canvas
         canvas.setOnKeyPressed(key -> {
             if (gameState.isGameOver()) {
+                Audio.GAME_OVER_SOUND.stop();
                 gameState.setStarted(false);
                 Audio.MENU_SOUND.play();
                 restart();
@@ -91,6 +90,10 @@ public class GameLoop {
             else if (keyEventMap.containsKey(key.getCode())) {
                 if (!gameState.isStarted()) {
                     gameState.setStarted(true);
+                    Direction start = keyEventMap.get(key.getCode());
+                    if (start != Direction.LEFT) {
+                        gameState.setQueuedDirection(keyEventMap.get(key.getCode()));
+                    }
                     start();
                 } else {
                     Direction direction = keyEventMap.get(key.getCode());
@@ -268,7 +271,6 @@ public class GameLoop {
                             "value: " + switchVal);
                 };
             }
-            System.out.println("SHIELD COUNT: " + switchVal);
             toDraw.setOrientation(sc.getDir());
             drawSpriteToGameBounds(toDraw, x, y);
         }
@@ -381,7 +383,6 @@ public class GameLoop {
                 if (food.isCrumb() || passed < 120) {
                     drawSpriteToGameBounds(toDraw, displayX, displayY);
                 } else if (passed % 10 < 5) {
-                    System.out.println("HHHHHH");
                     drawSpriteToGameBounds(toDraw, displayX, displayY);
                 }
             }

@@ -65,7 +65,7 @@ public class BladePath {
             current = current.go(path.getLast());
             initialSize++;
         }
-        colorId = (int) (Math.random() * 6);
+        colorId = (int) (1 + Math.random() * 6);
     }
 
     public PointInt getStart() {

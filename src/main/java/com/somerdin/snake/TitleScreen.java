@@ -50,7 +50,6 @@ public class TitleScreen {
         canvas.setOnKeyPressed(keyEvent -> {
             canvas.setFocusTraversable(false);
             timer.stop();
-            Audio.MENU_SOUND.play();
             GameLoop loop = new GameLoop(canvas);
         });
     }

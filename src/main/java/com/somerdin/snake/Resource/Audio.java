@@ -32,17 +32,22 @@ public class Audio {
             new AudioClip(Audio.class.getResource("/sound/invincible.wav").toExternalForm());
     public static final AudioClip CRUMBS_CLEARED_SOUND =
             new AudioClip(Audio.class.getResource("/sound/crumbs_cleared.wav").toExternalForm());
+    public static final AudioClip GAME_OVER_SOUND =
+            new AudioClip(Audio.class.getResource("/sound/sfx_sound_shutdown2.wav").toExternalForm());
+    public static final AudioClip START_SOUND =
+            new AudioClip(Audio.class.getResource("/sound/start_sound.wav").toExternalForm());
 
     static {
         EAT_CRUMB_SOUND.setVolume(0.1);
         EAT_FRUIT_SOUND.setVolume(0.25);
         POWER_UP_SOUND.setVolume(0.3);
         DEATH_SOUND.setVolume(0.8);
-        DAMAGE_SOUND.setVolume(0.6);
+        DAMAGE_SOUND.setVolume(0.9);
         BLADE_SOUND.setVolume(0.3);
         BLADE_SOUND.setCycleCount(AudioClip.INDEFINITE);
-        BLADE_EXPLODE_SOUND.setVolume(0.5);
+        BLADE_EXPLODE_SOUND.setVolume(0.7);
         BOMB_SOUND.setVolume(0.8);
         CRUMBS_CLEARED_SOUND.setVolume(0.8);
+        START_SOUND.setVolume(0.7);
     }
 }

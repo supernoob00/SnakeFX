@@ -189,13 +189,19 @@ public final class Sprite {
             switch (colorId) {
                 case 1 -> viewport = getViewport(0, 0, TILE_WIDTH_ACTUAL);
                 case 2 -> viewport = getViewport(1, 0, TILE_WIDTH_ACTUAL);
-                default -> viewport = getViewport(2, 0, TILE_WIDTH_ACTUAL);
+                case 3 -> viewport = getViewport(2, 0, TILE_WIDTH_ACTUAL);
+                case 4 -> viewport = getViewport(3, 0, TILE_WIDTH_ACTUAL);
+                case 5 -> viewport = getViewport(0, 1, TILE_WIDTH_ACTUAL);
+                default -> viewport = getViewport(1, 1, TILE_WIDTH_ACTUAL);
             };
         } else {
             switch (colorId) {
                 case 1 -> viewport = getViewport(2, 1, TILE_WIDTH_ACTUAL);
                 case 2 -> viewport = getViewport(3, 1, TILE_WIDTH_ACTUAL);
-                default -> viewport = getViewport(0, 2, TILE_WIDTH_ACTUAL);
+                case 3 -> viewport = getViewport(0, 2, TILE_WIDTH_ACTUAL);
+                case 4 -> viewport = getViewport(1, 2, TILE_WIDTH_ACTUAL);
+                case 5 -> viewport = getViewport(2, 2, TILE_WIDTH_ACTUAL);
+                default -> viewport = getViewport(3, 2, TILE_WIDTH_ACTUAL);
             }
             switch (whichCorner) {
                 case BOTTOM_LEFT_CORNER -> BLADE_PATH.imgView.setRotate(0);
@@ -206,7 +212,6 @@ public final class Sprite {
                         "argument: " + whichCorner);
             }
         }
-
         BLADE_PATH.imgView.setViewport(viewport);
         return BLADE_PATH;
     }

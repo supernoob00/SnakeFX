@@ -98,7 +98,6 @@ public class GameState {
         if (food != null && food.isCrumb()) {
             crumbCount--;
             if (crumbCount == 0) {
-                stage++;
                 crumbClearCount++;
                 makeBladesExplode();
                 setInitialCrumbPattern();
@@ -234,27 +233,36 @@ public class GameState {
 
         Food foodToPlace = null;
         // base probabilities:
-        // APPLE: 0.50
-        // CHERRY: 0.20
-        // COOKIE: 0.15
+        // APPLE: 0.70
+        // CHERRY: 0.10
+        // COOKIE: 0.05
 
-        // INVINCIBILITY: 0.10
+        // INVINCIBILITY: 0.102
         // BOMB: 0.05
         double rand = Math.random();
-        double[] probabilities = new double[] {0.5, 0.7, 0.85, 0.95, 1.0};
+        double[] probabilities = new double[] {0.88, 0.04, 0.02, 0.03,
+                0.03};
+        double adjustment = snake.getLength() * 0.01;
+        double[] dist = new double[5];
         for (int i = 0; i < probabilities.length; i++) {
-            if (rand < probabilities[i]) {
+            if (i == 0) {
+                dist[i] = probabilities[i] - adjustment;
+            } else {
+                dist[i] = dist[i - 1] + probabilities[i] + adjustment / 4;
+            }
+        }
+        for (int i = 0; i < dist.length; i++) {
+            if (rand < dist[i]) {
                 foodToPlace = switch (i) {
-                    case 0 -> Food.RED_APPLE;
                     case 1 -> Food.CHERRY;
                     case 2 -> Food.COOKIE;
                     case 3 -> Food.INVINCIBLE;
                     case 4 -> Food.BOMB;
-                    default ->
-                            throw new IllegalStateException("Unexpected value: " + i);
+                    default -> Food.RED_APPLE;
                 };
                 break;
             }
+            foodToPlace = Food.RED_APPLE;
         }
         placeFood(random, new Item(foodToPlace, frames));
     }
@@ -293,9 +301,6 @@ public class GameState {
     }
 
     public void spawnBlades() {
-        if (!Audio.BLADE_SOUND.isPlaying()) {
-            // Audio.BLADE_SOUND.play();
-        }
         int bladeCount = switch (stage) {
             case 1 -> 3;
             case 2 -> 6;
@@ -311,6 +316,7 @@ public class GameState {
 
     public void update(long updateCount) {
         frames = updateCount;
+        System.out.println("STAGE:" + stage);
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
                 Item item = food[i][j];
@@ -329,6 +335,7 @@ public class GameState {
             if (SNAKE_EXPLODE_EVENT.framesPassed(updateCount) > 180
                     && !GAME_OVER_EVENT.inProgress(frames)) {
                  GAME_OVER_EVENT.start(updateCount);
+                 Audio.GAME_OVER_SOUND.play();
             }
             return;
         } else {
@@ -396,7 +403,9 @@ public class GameState {
                     placeFood(p, new Item(Food.getRandomCrumb(), frames));
                 }
                 if (crumbsToDraw.isEmpty()) {
-                    spawnFruit();
+                    for (int i = 0; i < crumbClearCount + 1; i++) {
+                        spawnFruit();
+                    }
                 }
             }
         }
@@ -404,20 +413,20 @@ public class GameState {
             Audio.BLADE_SOUND.stop();
         }
 
-        if (getSecondsFromFrames(frames) > 30
-                || snake.getLength() > 8 && stage == 1) {
+        if ((getSecondsFromFrames(frames) > 30
+                || snake.getLength() > 8) && stage == 1) {
             stage++;
-        } else if (getSecondsFromFrames(frames) > 120
-                || snake.getLength() > 12 && stage == 2) {
+        } else if ((getSecondsFromFrames(frames) > 150
+                || snake.getLength() > 16) && stage == 2) {
             stage++;
-        } else if (getSecondsFromFrames(frames) > 210
-                || snake.getLength() > 18  && stage == 3) {
+        } else if ((getSecondsFromFrames(frames) > 270
+                || snake.getLength() > 24)  && stage == 3) {
             stage++;
-        } else if (getSecondsFromFrames(frames) > 300
-                || snake.getLength() > 26 && stage == 4) {
+        } else if ((getSecondsFromFrames(frames) > 290
+                || snake.getLength() > 30) && stage == 4) {
             stage++;
-        } else if (getSecondsFromFrames(frames) > 390
-                || snake.getLength() > 32 && stage == 5) {
+        } else if ((getSecondsFromFrames(frames) > 410
+                || snake.getLength() > 36) && stage == 5) {
             stage++;
         }
     }
@@ -526,7 +535,6 @@ public class GameState {
             for (int j = 1; j < height; j += 2) {
                 PointInt p = new PointInt(j, i);
                 crumbsToDraw.add(p);
-                // magnetizedFoodTimestamps[i][j] = 0;
             }
         }
         for (int i = 1; i < cells.length - 1; i++) {
@@ -545,6 +553,9 @@ public class GameState {
                 }
                 if (cell.west && p.x() > 0) {
                     crumbsToDraw.add(p.go(Direction.LEFT));
+                }
+                if (getFood(p) != null) {
+                    removeFood(p);
                 }
             }
         }
