@@ -8,6 +8,7 @@ import javafx.animation.AnimationTimer;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.input.KeyCode;
+import javafx.scene.media.AudioClip;
 import javafx.scene.media.MediaPlayer;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -58,16 +59,30 @@ public class GameLoop {
     private final GraphicsContext g;
     private final int cellLength;
     private final AnimationTimer timer;
+    private boolean paused;
 
     // number of game state updates which have occurred
     private long frameCount = 0;
 
     public GameLoop(Canvas canvas) {
         gameState = new GameState(GameState.HEIGHT, GameState.WIDTH);
+        timer = new AnimationTimer() {
+            @Override
+            // all game animations update at 60 FPS
+            public void handle(long time) {
+                gameState.update(frameCount);
+                draw();
+                frameCount++;
+            }
+        };
 
         // key press listeners on canvas
         canvas.setOnKeyPressed(key -> {
+            if (key.getCode() != KeyCode.P && paused) {
+                return;
+            }
             if (gameState.isGameOver()) {
+                paused = false;
                 Audio.GAME_OVER_SOUND.stop();
                 gameState.setStarted(false);
                 Audio.MENU_SOUND.play();
@@ -76,8 +91,21 @@ public class GameLoop {
                 drawStartText();
             } else if (key.getCode() == KeyCode.SPACE && gameState.getSnake().canBoost()) {
                 gameState.getSnake().setBoosting(true);
-            } else if (key.getCode() == KeyCode.P) {
-                // TODO
+            } else if (key.getCode() == KeyCode.P && gameState.isStarted()) {
+                if (!paused) {
+                    paused = true;
+                    Audio.START_SOUND.play();
+                    canvas.setFocusTraversable(false);
+                    gameState.setQueuedDirection(null);
+                    timer.stop();
+                    mediaPlayer.pause();
+                } else {
+                    paused = false;
+                    Audio.START_SOUND.play();
+                    canvas.setFocusTraversable(true);
+                    timer.start();
+                    mediaPlayer.play();
+                }
             } else if (keyDirectionMap.containsKey(key.getCode())) {
                 if (!gameState.isStarted()) {
                     gameState.setStarted(true);
@@ -107,15 +135,6 @@ public class GameLoop {
         g = canvas.getGraphicsContext2D();
         cellLength = PLAYABLE_AREA_HEIGHT / GameState.HEIGHT;
 
-        timer = new AnimationTimer() {
-            @Override
-            // all game animations update at 60 FPS
-            public void handle(long time) {
-                gameState.update(frameCount);
-                draw();
-                frameCount++;
-            }
-        };
         draw();
         drawStartText();
         mediaPlayer.setOnEndOfMedia(() -> {
@@ -185,7 +204,6 @@ public class GameLoop {
             drawGameOver();
             if (gameState.GAME_OVER_EVENT.framesPassed(frameCount) % 60 < 30) {
                 drawContinueText();
-                System.out.println("hello");
             }
         }
     }

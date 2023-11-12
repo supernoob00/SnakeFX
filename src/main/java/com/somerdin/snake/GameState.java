@@ -174,7 +174,6 @@ public class GameState {
         if (foodAtHead.isFruit()) {
             snake.grow();
             health += foodAtHead.getHealthValue();
-            score += foodAtHead.getScore() * getScoreMultiplier();
             Audio.EAT_FRUIT_SOUND.play();
         } else if (foodAtHead.isPowerUp()) {
             switch (foodAtHead.getFood()) {
@@ -192,14 +191,12 @@ public class GameState {
                     Audio.BOMB_SOUND.play();
                 }
             }
-        } else {
-            score += foodAtHead.getScore() * getScoreMultiplier();
         }
+        score += foodAtHead.getScore() * getScoreMultiplier();
     }
 
     public void spawnFruit() {
-        // max amount of attempts to spawn food in a random location,
-        // in case something has gone horribly awry
+        // TODO: failsafe if unable to find random empty tile
         PointInt random = getRandomPoint();
         Item existing = getFood(random);
         while (snake.containsPoint(random)
@@ -219,9 +216,7 @@ public class GameState {
         double rand = Math.random();
         double[] probabilities = new double[]{0.88, 0.04, 0.02, 0.03,
                 0.03};
-        double adjustment =
-                snake.getLength() * 0.015 + Math.min(crumbClearCount * 0.1,
-                        0.8);
+        double adjustment = snake.getLength() * 0.015;
         double[] dist = new double[5];
         for (int i = 0; i < probabilities.length; i++) {
             if (i == 0) {
@@ -295,7 +290,6 @@ public class GameState {
 
     public void update(long updateCount) {
         frames = updateCount;
-        System.out.println("STAGE:" + stage);
         for (int i = 0; i < height; i++) {
             for (int j = 0; j < width; j++) {
                 Item item = food[i][j];
@@ -315,6 +309,7 @@ public class GameState {
                     && !GAME_OVER_EVENT.inProgress(frames)) {
                 if (score > Score.getHighScore()) {
                     Score.writeHighScore(score);
+                    Score.setHighScore(score);
                 }
                 GAME_OVER_EVENT.start(updateCount);
                 Audio.GAME_OVER_SOUND.play();
@@ -360,7 +355,6 @@ public class GameState {
                     if (sb.getParticles().isMoving()) {
                         sb.getParticles().updatePos(1);
                     } else if (!sb.getParticles().setRandomParticleInvisible()) {
-                        System.out.println("EXPLODED REMOVED!!");
                         it.remove();
                     }
                 } else {

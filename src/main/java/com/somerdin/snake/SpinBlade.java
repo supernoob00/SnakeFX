@@ -91,7 +91,6 @@ public class SpinBlade {
     }
 
     public void makeExplode() {
-        System.out.println("PARTICLES SET");
         int pixelsPerTile = Sprite.TILE_WIDTH_PIXELS * Sprite.TILE_WIDTH_PIXELS;
         particles = new ParticleManager(pixelsPerTile,
                 GameLoop.PLAYABLE_AREA_WIDTH, GameLoop.PLAYABLE_AREA_HEIGHT,

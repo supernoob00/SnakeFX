@@ -2,7 +2,6 @@ package com.somerdin.snake;
 
 import java.io.*;
 
-// TODO: make non-static and pass into gamestate as parameter
 public class Score {
     public static final String WORKING_DIRECTORY = System.getProperty("user.dir");
     public static final String TEXT_FILE_DIRECTORY =

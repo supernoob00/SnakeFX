@@ -5,7 +5,7 @@ import javafx.scene.media.Media;
 
 public class Audio {
     public static final Media MUSIC =
-            new Media(Audio.class.getResource("/music/3 - Stage 1 & 5.mp3").toExternalForm());
+            new Media(Audio.class.getResource("/music/fighter-nes.wav").toExternalForm());
     public static final AudioClip EAT_CRUMB_SOUND =
             new AudioClip(Audio.class.getResource("/sound/coin_single" +
                     ".wav").toExternalForm());
@@ -39,14 +39,14 @@ public class Audio {
 
     static {
         EAT_CRUMB_SOUND.setVolume(0.1);
-        EAT_FRUIT_SOUND.setVolume(0.25);
+        EAT_FRUIT_SOUND.setVolume(0.5);
         POWER_UP_SOUND.setVolume(0.3);
-        DEATH_SOUND.setVolume(0.8);
-        DAMAGE_SOUND.setVolume(0.9);
+        DEATH_SOUND.setVolume(0.6);
+        DAMAGE_SOUND.setVolume(0.7);
         BLADE_SOUND.setVolume(0.3);
         BLADE_SOUND.setCycleCount(AudioClip.INDEFINITE);
-        BLADE_EXPLODE_SOUND.setVolume(0.7);
-        BOMB_SOUND.setVolume(0.8);
+        BLADE_EXPLODE_SOUND.setVolume(0.9);
+        BOMB_SOUND.setVolume(1.0  );
         CRUMBS_CLEARED_SOUND.setVolume(0.8);
         START_SOUND.setVolume(0.7);
     }
