@@ -6,7 +6,6 @@ import com.somerdin.snake.Resource.Audio;
 import com.somerdin.snake.Resource.Sprite;
 import javafx.scene.shape.Circle;
 
-import java.io.Writer;
 import java.util.*;
 
 public class GameState {
@@ -355,7 +354,7 @@ public class GameState {
             }
             if (SNAKE_EXPLODE_EVENT.framesPassed(updateCount) > 180
                     && !GAME_OVER_EVENT.inProgress(frames)) {
-                if (score > Score.getHighScore()) {
+                if (score > Score.getHighScore() && Score.isScoreSaved()) {
                     Score.writeHighScore(score);
                     Score.setHighScore(score);
                 }
