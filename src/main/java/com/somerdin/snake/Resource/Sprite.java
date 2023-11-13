@@ -117,7 +117,7 @@ public final class Sprite {
                 TILE_WIDTH_ACTUAL));
         SNAKE_BODY_IMG_THREE_SHIELD.setViewport(getViewport(5, 9,
                 TILE_WIDTH_ACTUAL));
-        RED_APPLE_IMG.setViewport(getViewport(6, 0, TILE_WIDTH_ACTUAL));
+        RED_APPLE_IMG.setViewport(getViewport(6, 4, TILE_WIDTH_ACTUAL));
         CHERRY_IMG.setViewport(getViewport(6, 3, TILE_WIDTH_ACTUAL));
         COOKIE_IMG.setViewport(getViewport(7, 3, TILE_WIDTH_ACTUAL));
         SHIELD_IMG.setViewport(getViewport(0, 0, TILE_WIDTH_ACTUAL));

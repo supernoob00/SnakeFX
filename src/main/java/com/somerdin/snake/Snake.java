@@ -1,6 +1,7 @@
 package com.somerdin.snake;
 
 import com.somerdin.snake.Point.PointInt;
+import com.somerdin.snake.Resource.Audio;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -117,8 +118,12 @@ public class Snake {
         else {
             // snake just ran out of boost juice
             if (boostGauge < 25) {
+                if (boostGauge == 24) {
+                    Audio.LOW_BOOST_SOUND.play();
+                }
                 resetCooldown();
-                if (boostGauge <= BOOST_GAUGE_USAGE) {
+                if (boostGauge == 0) {
+                    isBoosting = false;
                     slowDown();
                 } else {
                     boostGauge -= BOOST_GAUGE_USAGE;

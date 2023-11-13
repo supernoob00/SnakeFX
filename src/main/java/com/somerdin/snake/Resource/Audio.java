@@ -36,6 +36,9 @@ public class Audio {
             new AudioClip(Audio.class.getResource("/sound/sfx_sound_shutdown2.wav").toExternalForm());
     public static final AudioClip START_SOUND =
             new AudioClip(Audio.class.getResource("/sound/start_sound.wav").toExternalForm());
+    public static final AudioClip LOW_BOOST_SOUND =
+            new AudioClip(Audio.class.getResource("/sound/low_boost_alarm" +
+                    ".wav").toExternalForm());
 
     static {
         EAT_CRUMB_SOUND.setVolume(0.1);
@@ -49,5 +52,6 @@ public class Audio {
         BOMB_SOUND.setVolume(1.0  );
         CRUMBS_CLEARED_SOUND.setVolume(0.8);
         START_SOUND.setVolume(0.7);
+        LOW_BOOST_SOUND.setVolume(0.7);
     }
 }

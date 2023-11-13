@@ -2,13 +2,13 @@ package com.somerdin.snake;
 
 public enum Food {
     // fruit
-    RED_APPLE(250, 1, 240, 0),
-    CHERRY(500, 2, 240, 0),
-    COOKIE(1000, 4, 240, 0),
+    RED_APPLE(250, 1, 200, 0),
+    CHERRY(500, 2, 200, 0),
+    COOKIE(1000, 4, 200, 0),
 
     // power ups
-    INVINCIBLE(250, 4, 360, 0),
-    BOMB(500, 8, 240, 0),
+    INVINCIBLE(250, 4, 200, 0),
+    BOMB(500, 8, 200, 0),
 
     // represent different crumb colors
     CRUMB_1(10, 0, -1, 1),

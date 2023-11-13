@@ -103,6 +103,14 @@ public class GameState {
                     default -> 500_000;
                 };
 
+                for (int i = 0; i < height; i++) {
+                    for (int j = 0; j < width; j++) {
+                        if (this.food[i][j] != null && (this.food[i][j].isFruit() || this.food[i][j].isPowerUp())) {
+                            this.food[i][j] = null;
+                        }
+                    }
+                }
+
                 Audio.CRUMBS_CLEARED_SOUND.play();
             }
         }
@@ -167,31 +175,31 @@ public class GameState {
 
     private void eatFood(PointInt p) {
         Item foodAtHead = getFood(p);
-        removeFood(p);
         if (!foodAtHead.isCrumb()) {
             spawnFruit();
-        }
-        if (foodAtHead.isFruit()) {
-            snake.grow();
-            health += foodAtHead.getHealthValue();
-            Audio.EAT_FRUIT_SOUND.play();
-        } else if (foodAtHead.isPowerUp()) {
-            switch (foodAtHead.getFood()) {
-                case INVINCIBLE -> {
-                    INVINCIBLE_POWER_UP_EVENT.start(frames);
-                    Audio.INVINCIBLE_SOUND.play();
-                }
-                case BOMB -> {
-                    BOMB_POWER_UP_EVENT.start(frames);
-                    bombRadius.setCenterX(GameLoop.WALL_WIDTH
-                            + p.x() * Sprite.TILE_WIDTH_ACTUAL + Sprite.TILE_WIDTH_ACTUAL / 2);
-                    bombRadius.setCenterY(GameLoop.WALL_WIDTH
-                            + p.y() * Sprite.TILE_WIDTH_ACTUAL + Sprite.TILE_WIDTH_ACTUAL / 2);
-                    bombRadius.setRadius(INITIAL_BOMB_RADIUS);
-                    Audio.BOMB_SOUND.play();
+            if (foodAtHead.isFruit()) {
+                snake.grow();
+                health += foodAtHead.getHealthValue();
+                Audio.EAT_FRUIT_SOUND.play();
+            } else if (foodAtHead.isPowerUp()) {
+                switch (foodAtHead.getFood()) {
+                    case INVINCIBLE -> {
+                        INVINCIBLE_POWER_UP_EVENT.start(frames);
+                        Audio.INVINCIBLE_SOUND.play();
+                    }
+                    case BOMB -> {
+                        BOMB_POWER_UP_EVENT.start(frames);
+                        bombRadius.setCenterX(GameLoop.WALL_WIDTH
+                                + p.x() * Sprite.TILE_WIDTH_ACTUAL + Sprite.TILE_WIDTH_ACTUAL / 2);
+                        bombRadius.setCenterY(GameLoop.WALL_WIDTH
+                                + p.y() * Sprite.TILE_WIDTH_ACTUAL + Sprite.TILE_WIDTH_ACTUAL / 2);
+                        bombRadius.setRadius(INITIAL_BOMB_RADIUS);
+                        Audio.BOMB_SOUND.play();
+                    }
                 }
             }
         }
+        removeFood(p);
         score += foodAtHead.getScore() * getScoreMultiplier();
     }
 
@@ -432,16 +440,16 @@ public class GameState {
         if ((getSecondsFromFrames(frames) > 30
                 || snake.getLength() > 8) && stage == 1) {
             stage++;
-        } else if ((getSecondsFromFrames(frames) > 150
+        } else if ((getSecondsFromFrames(frames) > 120
                 || snake.getLength() > 16) && stage == 2) {
             stage++;
-        } else if ((getSecondsFromFrames(frames) > 270
+        } else if ((getSecondsFromFrames(frames) > 210
                 || snake.getLength() > 24) && stage == 3) {
             stage++;
-        } else if ((getSecondsFromFrames(frames) > 290
+        } else if ((getSecondsFromFrames(frames) > 300
                 || snake.getLength() > 30) && stage == 4) {
             stage++;
-        } else if ((getSecondsFromFrames(frames) > 410
+        } else if ((getSecondsFromFrames(frames) > 390
                 || snake.getLength() > 36) && stage == 5) {
             stage++;
         }
@@ -566,9 +574,6 @@ public class GameState {
                 if (cell.west && p.x() > 0) {
                     crumbsToDraw.add(p.go(Direction.LEFT));
                 }
-                if (getFood(p) != null) {
-                    removeFood(p);
-                }
             }
         }
         Collections.shuffle(crumbsToDraw);
@@ -577,8 +582,10 @@ public class GameState {
     // FOR TESTING
     public void removeAllCrumbs() {
         for (int i = 0; i < width; i++) {
-            for (int j = 0; j < height; j++) {
-                removeFood(new PointInt(i, j));
+            for (int j = 0; j < height - 1 ; j++) {
+                if (food[i][j] != null && food[i][j].isCrumb()) {
+                    removeFood(new PointInt(j, i));
+                }
             }
         }
     }

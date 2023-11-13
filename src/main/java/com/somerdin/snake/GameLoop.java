@@ -367,8 +367,10 @@ public class GameLoop {
                 if (food == null) {
                     continue;
                 }
+
                 double displayY = y * cellLength;
                 double displayX = x * cellLength;
+
                 Sprite toDraw = null;
                 switch (food.getFood()) {
                     case RED_APPLE -> toDraw = Sprite.APPLE;
