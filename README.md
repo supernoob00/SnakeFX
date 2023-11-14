@@ -6,4 +6,4 @@ CONTROLS:
 -Space to boost
 -P to pause
 
-(Download Link)[https://github.com/supernoob00/SnakeFX/releases/tag/v1.0.0]
+Download the executable here: https://github.com/supernoob00/SnakeFX/releases/tag/v1.0.0
