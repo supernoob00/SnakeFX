@@ -18,4 +18,4 @@ CONTROLS:
 
 Download the executable here for Windows: https://github.com/supernoob00/SnakeFX/releases/tag/v1.0.0. Also playable on Mac/Linux by running the JAR file included instead (JRE 21 is required).
 
-NOTE: It has come to my attention that the game doesn't work on Linux. Apparently JavaFX runs with a 60 FPS frame rate cap on Windows, but is uncapped on Linux. The lesson here: don't tie your game logic to frame counts like I did.
+NOTE: It has come to my attention that the game doesn't work on Linux. Apparently JavaFX runs with a 60 FPS frame rate cap on Windows, but is uncapped on Linux. The lesson here: don't tie your game logic to frame counts like I did. Mac is still untested.
